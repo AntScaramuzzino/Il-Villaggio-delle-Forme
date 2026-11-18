@@ -129,48 +129,48 @@ export const ShapesAtlas: React.FC<ShapesAtlasProps> = ({
         </div>
       </div>
 
-      {/* Horizontal Explorer: 3 columns in LIM mode (zero scroll), 2 columns in standard mode */}
+      {/* Two-Column Explorer (both standard and zero-scroll LIM horizontal mode) */}
       <div
         className={`grid grid-cols-1 md:grid-cols-12 md:items-stretch ${
           limMode ? 'mt-0 flex-1 min-h-0 gap-4' : 'mt-5 gap-6'
         }`}
       >
-        {/* Left: Interactive Geometry Stage with Shape-Matched Illustrated Backdrop */}
+        {/* Left Column: Interactive Geometry Stage with Shape-Matched Illustrated Backdrop */}
         <div
-          className={`flex flex-col justify-between rounded-2xl border border-slate-300 bg-white ${
-            limMode ? 'p-4 md:col-span-6 min-h-0' : 'p-5 sm:p-6 md:col-span-7'
+          className={`flex flex-col justify-between rounded-2xl border border-slate-300 bg-white md:col-span-7 ${
+            limMode ? 'p-4 min-h-0' : 'p-5 sm:p-6'
           }`}
         >
           <div className={limMode ? 'flex flex-1 flex-col min-h-0' : ''}>
-            {!limMode && (
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <span className="text-xs font-semibold text-red-700">
-                    {activeShape.category === 'solido' ? 'Solido Geometrico 3D' : 'Figura Piana 2D'}
-                    {' · '}
-                    Oggetto di Natale: {activeShape.christmasObject}
-                  </span>
-                  <h2
-                    className="mt-1 text-2xl font-semibold text-slate-900"
-                    style={{ fontFamily: 'var(--font-display)' }}
-                  >
-                    {activeShape.name}
-                  </h2>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleSpeakShape(activeShape)}
-                  className="inline-flex min-h-[42px] items-center gap-1.5 rounded-xl bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer"
+            <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
+              <div className="min-w-0">
+                <span className="text-xs font-semibold text-red-700">
+                  {activeShape.category === 'solido' ? 'Solido Geometrico 3D' : 'Figura Piana 2D'}
+                  {' · '}
+                  Oggetto di Natale: {activeShape.christmasObject}
+                </span>
+                <h2
+                  className={`font-semibold text-slate-900 ${limMode ? 'mt-0.5 text-xl' : 'mt-1 text-2xl'}`}
+                  style={{ fontFamily: 'var(--font-display)' }}
                 >
-                  <Volume2 className="h-4 w-4" aria-hidden="true" />
-                  <span>Ascolta Scheda</span>
-                </button>
+                  {activeShape.name}
+                </h2>
               </div>
-            )}
+
+              <button
+                type="button"
+                onClick={() => handleSpeakShape(activeShape)}
+                className={`inline-flex items-center gap-1.5 rounded-xl bg-amber-400 px-3.5 text-xs font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer ${
+                  limMode ? 'min-h-[36px] py-1.5' : 'min-h-[42px] px-4 py-2'
+                }`}
+              >
+                <Volume2 className="h-4 w-4" aria-hidden="true" />
+                <span>Ascolta Scheda</span>
+              </button>
+            </div>
 
             {/* Unified Stage Control Bar: Mode Switcher + Stepper */}
-            <div className={`flex flex-wrap items-center justify-between gap-2 ${limMode ? 'mt-0 shrink-0' : 'mt-4'}`}>
+            <div className={`flex flex-wrap items-center justify-between gap-2 shrink-0 ${limMode ? 'mt-2' : 'mt-4'}`}>
               <div className="flex flex-wrap items-center gap-1 rounded-xl bg-slate-100 p-1">
                 {[
                   { id: 'affianca' as const, label: 'Affianca Forma' },
@@ -222,7 +222,7 @@ export const ShapesAtlas: React.FC<ShapesAtlasProps> = ({
             {/* Large Interactive Stage with Unique Per-Shape Christmas Illustration */}
             <div
               className={`relative mt-2.5 flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-300 bg-slate-900 ${
-                limMode ? 'flex-1 min-h-[240px]' : 'min-h-[310px] sm:min-h-[360px]'
+                limMode ? 'flex-1 min-h-[220px]' : 'min-h-[310px] sm:min-h-[360px]'
               }`}
             >
               <ResilientImage
@@ -251,7 +251,7 @@ export const ShapesAtlas: React.FC<ShapesAtlasProps> = ({
                   <div className="flex flex-col items-center rounded-2xl border border-white/75 bg-white/62 px-3.5 py-2.5 shadow-xl backdrop-blur-md transition-opacity duration-200">
                     <ShapeSvg
                       shapeId={activeShape.id}
-                      size={limMode ? 156 : 148}
+                      size={limMode ? 154 : 148}
                       rotationDeg={rotationDeg}
                       showVertices={showVertices}
                       showRightAngles={showRightAngles}
@@ -268,7 +268,7 @@ export const ShapesAtlas: React.FC<ShapesAtlasProps> = ({
                   <div className="rounded-2xl border border-white/75 bg-white/38 p-3 shadow-xl backdrop-blur-[2px] transition-opacity duration-200">
                     <ShapeSvg
                       shapeId={activeShape.id}
-                      size={limMode ? 210 : 196}
+                      size={limMode ? 204 : 196}
                       rotationDeg={rotationDeg}
                       showVertices={showVertices}
                       showRightAngles={showRightAngles}
@@ -289,7 +289,7 @@ export const ShapesAtlas: React.FC<ShapesAtlasProps> = ({
             </div>
 
             {/* Interactive Geometry Layer Controls */}
-            <div className={`flex flex-wrap gap-1.5 shrink-0 ${limMode ? 'mt-3' : 'mt-4 gap-2'}`}>
+            <div className={`flex flex-wrap gap-1.5 shrink-0 ${limMode ? 'mt-2.5' : 'mt-4 gap-2'}`}>
               {[
                 {
                   label: limMode ? 'Vertici' : 'Mostra Vertici',
@@ -320,7 +320,7 @@ export const ShapesAtlas: React.FC<ShapesAtlasProps> = ({
                     ctrl.toggle();
                   }}
                   className={`rounded-lg border-2 px-3 py-1.5 text-xs font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                    limMode ? 'min-h-[38px]' : 'min-h-[42px] px-3.5'
+                    limMode ? 'min-h-[36px]' : 'min-h-[42px] px-3.5'
                   } ${
                     ctrl.active
                       ? 'border-[#0F5132] bg-[#0F5132] text-white'
@@ -338,7 +338,7 @@ export const ShapesAtlas: React.FC<ShapesAtlasProps> = ({
                   setRotationDeg((deg) => (deg + 45) % 360);
                 }}
                 className={`inline-flex items-center gap-1.5 rounded-lg border-2 border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-900 transition-colors hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer ${
-                  limMode ? 'min-h-[38px]' : 'min-h-[42px] px-3.5'
+                  limMode ? 'min-h-[36px]' : 'min-h-[42px] px-3.5'
                 }`}
               >
                 <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
@@ -388,141 +388,116 @@ export const ShapesAtlas: React.FC<ShapesAtlasProps> = ({
           )}
         </div>
 
-        {/* LIM Mode Middle Column: Dedicated Properties & Audio Card */}
-        {limMode && (
-          <div className="flex flex-col justify-between rounded-2xl border border-slate-300 bg-white p-4 md:col-span-3 min-h-0">
-            <div>
-              <span className="text-xs font-semibold text-red-700">
-                {activeShape.category === 'solido' ? 'Solido Geometrico 3D' : 'Figura Piana 2D'}
-              </span>
-              <h2
-                className="mt-0.5 text-2xl font-semibold text-slate-900"
-                style={{ fontFamily: 'var(--font-display)' }}
-              >
-                {activeShape.name}
-              </h2>
-              <p className="mt-0.5 text-xs font-bold text-[#0F5132]">
-                Oggetto: {activeShape.christmasObject}
-              </p>
-
-              <button
-                type="button"
-                onClick={() => handleSpeakShape(activeShape)}
-                className="mt-3 inline-flex min-h-[42px] w-full items-center justify-center gap-1.5 rounded-xl bg-amber-400 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap cursor-pointer"
-              >
-                <Volume2 className="h-4 w-4" aria-hidden="true" />
-                <span>Ascolta Scheda</span>
-              </button>
-
-              <div className="mt-4 border-t border-slate-200 pt-3">
-                <p className="text-sm leading-relaxed text-slate-800">
-                  {activeShape.description}
-                </p>
-                <p className="mt-2 rounded-lg bg-emerald-50 p-2.5 text-xs font-bold text-[#0F5132]">
-                  Regola d’oro: {activeShape.schoolTip}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-3 grid grid-cols-2 divide-x divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-slate-50/75">
-              <div className="p-2.5">
-                <span className="block text-[11px] font-medium text-slate-600">
-                  {activeShape.category === 'solido' ? 'Spigoli / Facce' : 'Lati'}
-                </span>
-                <span className="mt-0.5 block font-mono text-lg font-semibold text-slate-900 tabular-nums">
-                  {activeShape.sides}
-                </span>
-              </div>
-              <div className="p-2.5">
-                <span className="block text-[11px] font-medium text-slate-600">Vertici</span>
-                <span className="mt-0.5 block font-mono text-lg font-semibold text-slate-900 tabular-nums">
-                  {activeShape.vertices}
-                </span>
-              </div>
-              <div className="p-2.5">
-                <span className="block text-[11px] font-medium text-slate-600">Angoli retti</span>
-                <span className="mt-0.5 block font-mono text-lg font-semibold text-slate-900 tabular-nums">
-                  {activeShape.rightAngles}
-                </span>
-              </div>
-              <div className="p-2.5">
-                <span className="block text-[11px] font-medium text-slate-600">Simmetrie</span>
-                <span className="mt-0.5 block font-mono text-sm font-semibold text-slate-900 tabular-nums">
-                  {activeShape.symmetryAxes}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Right: Shape Grid Selector (compact 2-col 14-item grid fits zero-scroll in LIM mode) */}
+        {/* Right Column: Shape Grid Selector (+ Compact Properties Strip in LIM Mode) */}
         <div
-          className={`flex flex-col rounded-2xl border border-slate-300 bg-white ${
-            limMode ? 'p-3.5 md:col-span-3 min-h-0' : 'p-5 md:col-span-5'
+          className={`flex flex-col justify-between rounded-2xl border border-slate-300 bg-white md:col-span-5 ${
+            limMode ? 'p-4 min-h-0 overflow-hidden' : 'p-5'
           }`}
         >
-          <div className="flex shrink-0 items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-900">
-              Scegli una figura
-            </h3>
-            <span className="font-mono text-xs font-semibold text-slate-700 tabular-nums">
-              {visibleShapes.length} schede
-            </span>
+          <div className={limMode ? 'flex flex-col min-h-0' : ''}>
+            <div className="flex shrink-0 items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-900">
+                Scegli una figura
+              </h3>
+              <span className="font-mono text-xs font-semibold text-slate-700 tabular-nums">
+                {visibleShapes.length} schede
+              </span>
+            </div>
+
+            <div
+              className={`grid ${
+                limMode
+                  ? 'mt-2 grid-cols-2 gap-1.5 content-start'
+                  : 'mt-4 grid-cols-1 gap-2.5 sm:grid-cols-2'
+              }`}
+            >
+              {visibleShapes.map((shape) => {
+                const selected = shape.id === activeShape.id;
+                const visited = visitedIds.includes(shape.id);
+                return (
+                  <button
+                    key={shape.id}
+                    type="button"
+                    onClick={() => {
+                      playClickPop(soundEnabled);
+                      selectShape(shape.id);
+                    }}
+                    className={`flex items-center justify-between rounded-xl border-2 text-left transition-colors cursor-pointer ${
+                      limMode ? 'min-h-[40px] gap-1.5 px-2 py-1' : 'min-h-[68px] gap-2.5 p-2.5'
+                    } ${
+                      selected
+                        ? 'border-[#0F5132] bg-emerald-50 ring-2 ring-[#0F5132]/15'
+                        : 'border-slate-200 bg-white hover:border-[#0F5132] hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <div className="shrink-0">
+                        <ShapeSvg shapeId={shape.id} size={limMode ? 28 : 46} ornamentMode={ornamentMode} />
+                      </div>
+                      <div className="min-w-0">
+                        <span className={`block truncate font-bold text-slate-900 ${limMode ? 'text-xs' : 'text-sm'}`}>
+                          {shape.name}
+                        </span>
+                        {!limMode && (
+                          <span className="block truncate text-[11px] font-semibold text-red-700">
+                            {shape.christmasObject}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {visited && (
+                      <Check
+                        className={`shrink-0 ${limMode ? 'h-3.5 w-3.5' : 'h-4 w-4'} ${
+                          selected ? 'text-[#0F5132]' : 'text-emerald-600/70'
+                        }`}
+                        aria-hidden="true"
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div
-            className={`grid ${
-              limMode
-                ? 'mt-2.5 flex-1 grid-cols-2 gap-1.5 content-start'
-                : 'mt-4 grid-cols-1 gap-2.5 sm:grid-cols-2'
-            }`}
-          >
-            {visibleShapes.map((shape) => {
-              const selected = shape.id === activeShape.id;
-              const visited = visitedIds.includes(shape.id);
-              return (
-                <button
-                  key={shape.id}
-                  type="button"
-                  onClick={() => {
-                    playClickPop(soundEnabled);
-                    selectShape(shape.id);
-                  }}
-                  className={`flex items-center justify-between rounded-xl border-2 text-left transition-colors cursor-pointer ${
-                    limMode ? 'min-h-[48px] gap-1.5 p-1.5' : 'min-h-[68px] gap-2.5 p-2.5'
-                  } ${
-                    selected
-                      ? 'border-[#0F5132] bg-emerald-50 ring-2 ring-[#0F5132]/15'
-                      : 'border-slate-200 bg-white hover:border-[#0F5132] hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <div className="shrink-0">
-                      <ShapeSvg shapeId={shape.id} size={limMode ? 32 : 46} ornamentMode={ornamentMode} />
-                    </div>
-                    <div className="min-w-0">
-                      <span className={`block truncate font-bold text-slate-900 ${limMode ? 'text-xs' : 'text-sm'}`}>
-                        {shape.name}
-                      </span>
-                      {!limMode && (
-                        <span className="block truncate text-[11px] font-semibold text-red-700">
-                          {shape.christmasObject}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {visited && (
-                    <Check
-                      className={`shrink-0 ${limMode ? 'h-3.5 w-3.5' : 'h-4 w-4'} ${
-                        selected ? 'text-[#0F5132]' : 'text-emerald-600/70'
-                      }`}
-                      aria-hidden="true"
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          {limMode && (
+            <div className="mt-2.5 shrink-0 border-t border-slate-200 pt-2.5">
+              <p className="text-xs leading-snug text-slate-800 line-clamp-2">
+                {activeShape.description}
+              </p>
+              <p className="mt-1 text-xs font-bold text-[#0F5132] line-clamp-1">
+                Regola d’oro: {activeShape.schoolTip}
+              </p>
+
+              <div className="mt-2 grid grid-cols-4 divide-x divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-slate-50/75">
+                <div className="px-2.5 py-2">
+                  <span className="block text-[10px] font-medium text-slate-600">
+                    {activeShape.category === 'solido' ? 'Spigoli / Facce' : 'Lati'}
+                  </span>
+                  <span className="mt-0.5 block font-mono text-sm font-semibold text-slate-900 tabular-nums">
+                    {activeShape.sides}
+                  </span>
+                </div>
+                <div className="px-2.5 py-2">
+                  <span className="block text-[10px] font-medium text-slate-600">Vertici</span>
+                  <span className="mt-0.5 block font-mono text-sm font-semibold text-slate-900 tabular-nums">
+                    {activeShape.vertices}
+                  </span>
+                </div>
+                <div className="px-2.5 py-2">
+                  <span className="block text-[10px] font-medium text-slate-600">Angoli retti</span>
+                  <span className="mt-0.5 block font-mono text-sm font-semibold text-slate-900 tabular-nums">
+                    {activeShape.rightAngles}
+                  </span>
+                </div>
+                <div className="px-2.5 py-2">
+                  <span className="block text-[10px] font-medium text-slate-600">Simmetrie</span>
+                  <span className="mt-0.5 block truncate font-mono text-xs font-semibold text-slate-900 tabular-nums">
+                    {activeShape.symmetryAxes}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </section>
