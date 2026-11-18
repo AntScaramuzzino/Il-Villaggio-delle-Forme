@@ -266,11 +266,11 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5">
-          <div className="inline-flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50/80 px-2 py-1">
+          <div className="inline-flex items-center gap-2.5 rounded-2xl border border-teal-200 bg-teal-50/85 px-2.5 py-1.5">
             <div
-              className={`h-10 w-10 sm:h-11 sm:w-11 shrink-0 overflow-hidden rounded-xl border-2 border-teal-400 bg-white shadow-xs transition-transform ${
-                isLorenzoSpeaking ? 'elf-speaking-active' : ''
-              }`}
+              className={`shrink-0 overflow-hidden rounded-2xl border-2 border-teal-400 bg-white shadow-sm transition-transform ${
+                limMode ? 'h-14 w-14' : 'h-14 w-14 sm:h-16 sm:w-16'
+              } ${isLorenzoSpeaking ? 'elf-speaking-active' : ''}`}
             >
               <ResilientImage
                 src={ELF_BY_ID.lorenzo.portraitSrc}
@@ -280,8 +280,8 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
               />
             </div>
             <div className="hidden sm:block leading-tight">
-              <span className="block text-[10px] font-medium text-teal-800">Guida</span>
-              <span className="text-[11px] font-bold text-teal-950 whitespace-nowrap">
+              <span className="block text-[10px] font-semibold text-teal-800">Guida</span>
+              <span className="text-xs font-bold text-teal-950 whitespace-nowrap">
                 {ELF_BY_ID.lorenzo.fullName}
               </span>
             </div>
@@ -538,9 +538,9 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div
-                    className={`h-12 w-12 sm:h-14 sm:w-14 shrink-0 overflow-hidden rounded-xl border-2 border-amber-300/80 bg-white shadow-xs transition-transform ${
-                      isLorenzoSpeaking ? 'elf-speaking-active' : ''
-                    }`}
+                    className={`shrink-0 overflow-hidden rounded-2xl border-2 border-amber-300/80 bg-white shadow-sm transition-transform ${
+                      limMode ? 'h-16 w-16' : 'h-16 w-16 sm:h-20 sm:w-20'
+                    } ${isLorenzoSpeaking ? 'elf-speaking-active' : ''}`}
                   >
                     <ResilientImage
                       src={ELF_BY_ID.lorenzo.portraitSrc}

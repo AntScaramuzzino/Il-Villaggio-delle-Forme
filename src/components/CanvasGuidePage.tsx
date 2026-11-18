@@ -59,7 +59,7 @@ export const CanvasGuidePage: React.FC<CanvasGuidePageProps> = ({
   const containerMax = limMode ? 'max-w-[1600px]' : 'max-w-[1160px]';
   const isSpeaking = useSpeakingState();
   const speakingElf = useSpeakingElf();
-  const isStellaSpeaking = speakingElf === 'stella';
+  const isAntonioSpeaking = speakingElf === 'antonio';
 
   const activePrompt = promptTier === 'simple' ? SIMPLE_PROMPT : ADVANCED_AI_STUDIO_PROMPT;
 
@@ -101,18 +101,21 @@ export const CanvasGuidePage: React.FC<CanvasGuidePageProps> = ({
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2.5">
         <div className="flex items-center gap-3">
           <div
-            className={`h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-xl border-2 border-amber-400 bg-white shadow-sm transition-transform ${
-              isStellaSpeaking ? 'elf-speaking-active' : ''
+            className={`h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-2xl border-2 border-amber-400 bg-white shadow-sm transition-transform ${
+              isAntonioSpeaking ? 'elf-speaking-active' : ''
             }`}
           >
             <ResilientImage
-              src={ELF_BY_ID.stella.portraitSrc}
-              alt={ELF_BY_ID.stella.fullName}
-              fallbackTitle={ELF_BY_ID.stella.shortName}
+              src={ELF_BY_ID.antonio.portraitSrc}
+              alt={ELF_BY_ID.antonio.fullName}
+              fallbackTitle={ELF_BY_ID.antonio.shortName}
               className="h-full w-full object-cover object-top"
             />
           </div>
           <div>
+            <span className="inline-block text-[11px] font-bold text-[#0F5132]">
+              Guida · {ELF_BY_ID.antonio.fullName}
+            </span>
             <h1
               className="text-xl sm:text-2xl font-semibold text-slate-900"
               style={{ fontFamily: 'var(--font-display)' }}
@@ -129,7 +132,7 @@ export const CanvasGuidePage: React.FC<CanvasGuidePageProps> = ({
 
         <button
           type="button"
-          onClick={() => toggleSpeakForKids(GUIDE_SPEECH, { elfId: 'stella' })}
+          onClick={() => toggleSpeakForKids(GUIDE_SPEECH, { elfId: 'antonio' })}
           className="inline-flex min-h-[30px] items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-1 text-[11px] font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer"
         >
           {isSpeaking ? (

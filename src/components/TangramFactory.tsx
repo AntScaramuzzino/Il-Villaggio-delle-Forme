@@ -1089,9 +1089,9 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
           >
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div
-                className={`h-12 w-12 sm:h-14 sm:w-14 shrink-0 overflow-hidden rounded-xl border-2 border-amber-300/80 bg-white shadow-xs transition-transform ${
-                  isLorenzoSpeaking ? 'elf-speaking-active' : ''
-                }`}
+                className={`shrink-0 overflow-hidden rounded-2xl border-2 border-amber-300/80 bg-white shadow-sm transition-transform ${
+                  limMode ? 'h-16 w-16' : 'h-16 w-16 sm:h-20 sm:w-20'
+                } ${isLorenzoSpeaking ? 'elf-speaking-active' : ''}`}
               >
                 <ResilientImage
                   src={ELF_BY_ID.lorenzo.portraitSrc}
