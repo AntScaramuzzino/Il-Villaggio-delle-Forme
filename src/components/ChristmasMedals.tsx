@@ -258,7 +258,7 @@ export const ChristmasMedals: React.FC<ChristmasMedalsProps> = ({
     const msg = unlocked
       ? `Medaglia ${medal.title} sbloccata! ${medal.subtitle}.`
       : `Medaglia ${medal.title}: servono ${medal.requiredStars} stelle. Te ne mancano ${medal.requiredStars - totalStars}!`;
-    speakForKids(msg, soundEnabled);
+    speakForKids(msg, soundEnabled, { elfId: 'stella' });
   };
 
   return (

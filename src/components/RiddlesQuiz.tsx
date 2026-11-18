@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, HelpCircle, RotateCcw, Square, Volume2, XCircle } from 'lucide-react';
 import { getShapeById, RIDDLES_BANK, SCHOOL_LEVEL_INFO } from '../data/christmasShapes';
+import { ELF_BY_ID } from '../data/elfCharacters';
 import { AUDIO_DELAYS, playClickPop, playErrorThud, playSuccessChime } from '../lib/soundFx';
-import { speakForKids, stopSpeaking, toggleSpeakForKids, useSpeakingState } from '../lib/ttsVoice';
+import { speakForKids, stopSpeaking, toggleSpeakForKids, useSpeakingElf, useSpeakingState } from '../lib/ttsVoice';
 import { SchoolLevel, ShapeId } from '../types/christmasGeometry';
 import { ResilientImage } from './ResilientImage';
 import { ShapeSvg } from './ShapeSvg';
@@ -44,11 +45,14 @@ export const RiddlesQuiz: React.FC<RiddlesQuizProps> = ({
   const isCorrect = selectedOption === riddle.correctShapeId;
   const containerMax = limMode ? 'max-w-[1600px]' : 'max-w-[1160px]';
   const isSpeaking = useSpeakingState();
+  const speakingElf = useSpeakingElf();
+  const isRossellaSpeaking = speakingElf === 'rossella';
 
   useEffect(() => {
     if (soundEnabled) {
       speakForKids(`Indovinello numero ${safeIndex + 1}: ${riddle.question}`, true, {
-        delayMs: AUDIO_DELAYS.afterClick
+        delayMs: AUDIO_DELAYS.afterClick,
+        elfId: 'rossella'
       });
     } else {
       stopSpeaking();
@@ -68,14 +72,14 @@ export const RiddlesQuiz: React.FC<RiddlesQuizProps> = ({
       speakForKids(
         `Risposta esatta! È ${chosenShape.articleName}: ${chosenShape.christmasObject}. ${riddle.explanation}`,
         soundEnabled,
-        { delayMs: AUDIO_DELAYS.afterChime }
+        { delayMs: AUDIO_DELAYS.afterChime, elfId: 'rossella' }
       );
     } else {
       playErrorThud(soundEnabled);
       speakForKids(
-        `Non è ${chosenShape.articleName}. Riprova oppure chiedi un indizio all'Elfo Pino!`,
+        `Non è ${chosenShape.articleName}. Riprova oppure chiedi un indizio a Elfa Rossella!`,
         soundEnabled,
-        { delayMs: AUDIO_DELAYS.afterThud }
+        { delayMs: AUDIO_DELAYS.afterThud, elfId: 'rossella' }
       );
     }
   };
@@ -101,7 +105,8 @@ export const RiddlesQuiz: React.FC<RiddlesQuizProps> = ({
     const clueText = riddle.clues[nextStep - 1];
     if (clueText) {
       speakForKids(`Indizio ${nextStep}: ${clueText}`, soundEnabled, {
-        delayMs: AUDIO_DELAYS.afterClick
+        delayMs: AUDIO_DELAYS.afterClick,
+        elfId: 'rossella'
       });
     }
   };
@@ -178,23 +183,32 @@ export const RiddlesQuiz: React.FC<RiddlesQuizProps> = ({
             </div>
 
             <div className="mt-2.5 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-white/25 bg-white">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-xl border-2 border-amber-300/80 bg-white shadow-sm transition-transform ${
+                    isRossellaSpeaking ? 'elf-speaking-active' : ''
+                  }`}
+                >
                   <ResilientImage
-                    src="/src/assets/images/elf_craftsman_avatar_1794993394306.jpg"
-                    alt="Elfo Pino con indovinello"
-                    fallbackTitle="Elfo Pino"
-                    className="h-full w-full object-cover"
+                    src={ELF_BY_ID.rossella.portraitSrc}
+                    alt={`${ELF_BY_ID.rossella.fullName} con indovinello`}
+                    fallbackTitle={ELF_BY_ID.rossella.fullName}
+                    className="h-full w-full object-cover object-top"
                   />
                 </div>
-                <span className="text-xs font-semibold text-amber-200">
-                  L’Elfo Pino chiede:
-                </span>
+                <div>
+                  <span className="block text-[10px] font-medium text-emerald-200">
+                    Guida Indovinelli
+                  </span>
+                  <span className="text-xs sm:text-sm font-semibold text-amber-200">
+                    Elfa Rossella chiede:
+                  </span>
+                </div>
               </div>
 
               <button
                 type="button"
-                onClick={() => toggleSpeakForKids(riddle.question)}
+                onClick={() => toggleSpeakForKids(riddle.question, { elfId: 'rossella' })}
                 className="inline-flex min-h-[30px] items-center gap-1 rounded-lg bg-amber-400 px-3 py-1 text-[11px] font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer"
               >
                 {isSpeaking ? (
@@ -325,7 +339,7 @@ export const RiddlesQuiz: React.FC<RiddlesQuizProps> = ({
                         : 'Non è questa la figura.'}
                     </p>
                     <p className="mt-0.5 text-xs">
-                      {isCorrect ? riddle.explanation : 'Riprova oppure chiedi un indizio all’Elfo.'}
+                      {isCorrect ? riddle.explanation : 'Riprova oppure chiedi un indizio a Elfa Rossella.'}
                     </p>
                   </div>
                 </div>

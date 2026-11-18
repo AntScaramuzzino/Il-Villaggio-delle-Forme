@@ -109,3 +109,42 @@ export function playVictoryFanfare(enabled: boolean) {
   playTone(783.99, 0.1, 'triangle', 0.14, 0.07);
   playTone(1046.5, 0.28, 'sine', 0.21, 0.085);
 }
+
+export function playPiecePickup(enabled: boolean) {
+  if (!enabled) return;
+  // Soft wooden tile lift
+  playTone(392, 0.045, 'sine', 0, 0.042);
+  playTone(587.33, 0.055, 'triangle', 0.025, 0.036);
+}
+
+export function playPieceRotate(enabled: boolean, direction: 1 | -1 = 1) {
+  if (!enabled) return;
+  // Crisp mechanical/wooden 45° click-turn
+  const startFreq = direction > 0 ? 440 : 520;
+  const endFreq = direction > 0 ? 540 : 420;
+  playTone(startFreq, 0.035, 'triangle', 0, 0.038);
+  playTone(endFreq, 0.045, 'sine', 0.024, 0.035);
+}
+
+export function playPieceFlip(enabled: boolean) {
+  if (!enabled) return;
+  // Quick playful mirror-flip sound
+  playTone(440, 0.045, 'sine', 0, 0.04);
+  playTone(659.25, 0.06, 'triangle', 0.035, 0.042);
+}
+
+export function playSlotSnap(enabled: boolean) {
+  if (!enabled) return;
+  // Tactile puzzle-piece "incastro": wooden lock thump + bright harmonic confirmation
+  playTone(329.63, 0.045, 'triangle', 0, 0.055);
+  playTone(659.25, 0.085, 'triangle', 0.028, 0.065);
+  playTone(880, 0.12, 'sine', 0.065, 0.06);
+}
+
+export function playMagnetSnap(enabled: boolean) {
+  if (!enabled) return;
+  // Crisp magnetic "clack-ping" when two shapes attract and lock together
+  playTone(920, 0.03, 'triangle', 0, 0.05);
+  playTone(659.25, 0.075, 'sine', 0.018, 0.055);
+  playTone(1046.5, 0.11, 'sine', 0.042, 0.05);
+}

@@ -11,9 +11,10 @@ import {
 } from 'recharts';
 import { ArrowRight, FileDown, RotateCcw, Star } from 'lucide-react';
 import { CHRISTMAS_SHAPES, RIDDLES_BANK, TANGRAM_PUZZLES } from '../data/christmasShapes';
+import { ELF_BY_ID } from '../data/elfCharacters';
 import { generateElfCertificatePdf } from '../lib/certificatePdf';
 import { playClickPop, playSuccessChime } from '../lib/soundFx';
-import { speakForKids } from '../lib/ttsVoice';
+import { speakForKids, useSpeakingElf } from '../lib/ttsVoice';
 import { GameSection, WorkshopStats } from '../types/christmasGeometry';
 import { ChristmasMedals } from './ChristmasMedals';
 import { ResilientImage } from './ResilientImage';
@@ -44,6 +45,8 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
   const [confirmReset, setConfirmReset] = useState(false);
   const [studentName, setStudentName] = useState('');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const speakingElf = useSpeakingElf();
+  const isStellaSpeaking = speakingElf === 'stella';
 
   const handleDownloadCertificate = async () => {
     if (isGeneratingPdf) return;
@@ -52,8 +55,9 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
       await generateElfCertificatePdf({ studentName, stats });
       playSuccessChime(soundEnabled);
       speakForKids(
-        `Certificato dell'Elfo Geometra scaricato con ${stats.totalStars} stelle!`,
-        soundEnabled
+        `Certificato dell'Elfo Geometra rilasciato da Elfa Stella e scaricato con ${stats.totalStars} stelle!`,
+        soundEnabled,
+        { elfId: 'stella' }
       );
     } finally {
       setIsGeneratingPdf(false);
@@ -134,7 +138,28 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-[#0B3B24]/85 px-2 py-1">
+              <div
+                className={`h-11 w-11 sm:h-12 sm:w-12 shrink-0 overflow-hidden rounded-xl border-2 border-amber-300 bg-white shadow-sm transition-transform ${
+                  isStellaSpeaking ? 'elf-speaking-active' : ''
+                }`}
+              >
+                <ResilientImage
+                  src={ELF_BY_ID.stella.portraitSrc}
+                  alt={ELF_BY_ID.stella.fullName}
+                  fallbackTitle={ELF_BY_ID.stella.shortName}
+                  className="h-full w-full object-cover object-top"
+                />
+              </div>
+              <div className="hidden sm:block leading-tight">
+                <span className="block text-[10px] font-medium text-emerald-200">Rilascia</span>
+                <span className="text-[11px] font-bold text-amber-200 whitespace-nowrap">
+                  Elfa Stella
+                </span>
+              </div>
+            </div>
+
             <input
               type="text"
               value={studentName}
@@ -245,13 +270,13 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
       {/* Empty State Banner when no stars earned yet (compactly replaced by medal progress in LIM mode) */}
       {!hasAnyStars && !limMode && (
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5">
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+          <div className="flex items-center gap-3">
+            <div className="h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-xl border-2 border-amber-300 bg-slate-50 shadow-xs">
               <ResilientImage
-                src="/src/assets/images/elf_craftsman_avatar_1794993394306.jpg"
-                alt="Elfo Pino"
-                fallbackTitle="Elfo Pino"
-                className="h-full w-full object-cover"
+                src={ELF_BY_ID.stella.portraitSrc}
+                alt={ELF_BY_ID.stella.fullName}
+                fallbackTitle={ELF_BY_ID.stella.fullName}
+                className="h-full w-full object-cover object-top"
               />
             </div>
             <div>

@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ExternalLink, Globe, HeartHandshake, Sparkles, Square, Volume2 } from 'lucide-react';
+import { ELF_CHARACTERS, ElfCharacterId } from '../data/elfCharacters';
 import { playClickPop } from '../lib/soundFx';
-import { stopSpeaking, toggleSpeakForKids, useSpeakingState } from '../lib/ttsVoice';
-import { ShapeId } from '../types/christmasGeometry';
+import { stopSpeaking, toggleSpeakForKids, useSpeakingElf, useSpeakingState } from '../lib/ttsVoice';
 import { ResilientImage } from './ResilientImage';
 import { ShapeSvg } from './ShapeSvg';
 
@@ -11,62 +11,10 @@ interface CreditsPageProps {
   limMode?: boolean;
 }
 
-interface ElfEquiperNode {
-  name: string;
-  role: string;
-  shapeId: ShapeId;
-  badgeLabel: string;
-  accentBorder: string;
-  accentBg: string;
-}
-
-const ELFI_EQUIPERS: ElfEquiperNode[] = [
-  {
-    name: 'Alfredo',
-    role: 'Nodo Elfo Equipers',
-    shapeId: 'triangolo',
-    badgeLabel: 'Geometria & Logica',
-    accentBorder: 'border-emerald-300',
-    accentBg: 'bg-emerald-50/70'
-  },
-  {
-    name: 'Antonio',
-    role: 'Nodo Elfo Equipers',
-    shapeId: 'quadrato',
-    badgeLabel: 'Coding & Interazione',
-    accentBorder: 'border-amber-300',
-    accentBg: 'bg-amber-50/70'
-  },
-  {
-    name: 'Lorenzo',
-    role: 'Nodo Elfo Equipers',
-    shapeId: 'esagono',
-    badgeLabel: 'Tangram & Design',
-    accentBorder: 'border-teal-300',
-    accentBg: 'bg-teal-50/70'
-  },
-  {
-    name: 'Rossella',
-    role: 'Nodo Elfo Equipers',
-    shapeId: 'rombo',
-    badgeLabel: 'Didattica Primaria',
-    accentBorder: 'border-sky-300',
-    accentBg: 'bg-sky-50/70'
-  },
-  {
-    name: 'Stella',
-    role: 'Nodo Elfo Equipers',
-    shapeId: 'stella',
-    badgeLabel: 'Creatività & LIM',
-    accentBorder: 'border-yellow-400',
-    accentBg: 'bg-yellow-50/80'
-  }
-];
-
 const EFT_URL = 'https://www.istruzione.calabria.it/EFT/';
 
 const CREDITS_SPEECH =
-  'Crediti del progetto: Missione Natale, Il Villaggio delle Forme, realizzato dai nodi degli Elfi Equipers dell’Équipe Formativa Territoriale della Calabria: Alfredo, Antonio, Lorenzo, Rossella e Stella.';
+  'Crediti del progetto: Missione Natale, Il Villaggio delle Forme, realizzato dai 5 personaggi degli Elfi Equipers dell’Équipe Formativa Territoriale della Calabria: Elfo Alfredo, Elfo Antonio, Elfo Lorenzo, Elfa Rossella ed Elfa Stella.';
 
 export const CreditsPage: React.FC<CreditsPageProps> = ({
   soundEnabled,
@@ -74,12 +22,20 @@ export const CreditsPage: React.FC<CreditsPageProps> = ({
 }) => {
   const containerMax = limMode ? 'max-w-[1600px]' : 'max-w-[1160px]';
   const isSpeaking = useSpeakingState();
+  const speakingElf = useSpeakingElf();
+  const [activeElfId, setActiveElfId] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
       stopSpeaking();
     };
   }, []);
+
+  const handleSpeakElf = (elfId: ElfCharacterId, speech: string) => {
+    playClickPop(soundEnabled);
+    setActiveElfId(elfId);
+    toggleSpeakForKids(speech, { elfId });
+  };
 
   return (
     <section
@@ -122,11 +78,11 @@ export const CreditsPage: React.FC<CreditsPageProps> = ({
                 className="text-xl sm:text-2xl font-semibold text-white"
                 style={{ fontFamily: 'var(--font-display)' }}
               >
-                Credits · Gli Elfi Equipers
+                Credits · I 5 Personaggi degli Elfi Equipers
               </h1>
               {!limMode && (
                 <p className="mt-0.5 text-xs text-emerald-100">
-                  I nodi territoriali che hanno ideato e curato l’officina geometrica natalizia per la Scuola Primaria.
+                  Tocca un personaggio per ascoltare la sua presentazione nell’officina geometrica natalizia.
                 </p>
               )}
             </div>
@@ -135,15 +91,18 @@ export const CreditsPage: React.FC<CreditsPageProps> = ({
           <div className="flex flex-wrap items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={() => toggleSpeakForKids(CREDITS_SPEECH)}
+              onClick={() => {
+                setActiveElfId(null);
+                toggleSpeakForKids(CREDITS_SPEECH, { elfId: 'stella' });
+              }}
               className="inline-flex min-h-[32px] items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-1 text-[11px] font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer"
             >
-              {isSpeaking ? (
+              {isSpeaking && activeElfId === null ? (
                 <Square className="h-3 w-3 fill-slate-950" aria-hidden="true" />
               ) : (
                 <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
               )}
-              <span>{isSpeaking ? 'Ferma' : 'Ascolta'}</span>
+              <span>{isSpeaking && activeElfId === null ? 'Ferma' : 'Ascolta'}</span>
             </button>
 
             <a
@@ -161,7 +120,7 @@ export const CreditsPage: React.FC<CreditsPageProps> = ({
         </div>
       </div>
 
-      {/* 5 Nodes Grid: Alfredo, Antonio, Lorenzo, Rossella, Stella */}
+      {/* 5 Cartoon Characters Grid: Elfo Alfredo, Elfo Antonio, Elfo Lorenzo, Elfa Rossella, Elfa Stella */}
       <div
         className={`rounded-xl border border-slate-300 bg-white ${
           limMode ? 'flex-1 min-h-0 flex flex-col justify-between p-3.5' : 'p-3.5 sm:p-4 space-y-3'
@@ -170,10 +129,10 @@ export const CreditsPage: React.FC<CreditsPageProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
           <div>
             <h2 className="text-sm sm:text-base font-semibold text-slate-900">
-              I Nodi degli “Elfi Equipers”
+              I Nodi e i Personaggi degli “Elfi Equipers”
             </h2>
             <p className="text-[11px] text-slate-600">
-              Cinque nodi di innovazione digitale e didattica nella bottega dell’Équipe Formativa Calabria.
+              Elfo Antonio, Elfo Alfredo, Elfo Lorenzo, Elfa Stella ed Elfa Rossella ti accompagnano in ogni gioco del Villaggio.
             </p>
           </div>
           <span className="font-mono text-[11px] font-semibold text-[#0F5132] tabular-nums">
@@ -186,33 +145,62 @@ export const CreditsPage: React.FC<CreditsPageProps> = ({
             limMode ? 'my-auto' : ''
           }`}
         >
-          {ELFI_EQUIPERS.map((elf) => (
-            <div
-              key={elf.name}
-              className={`flex flex-col items-center justify-between rounded-xl border-2 text-center transition-colors ${elf.accentBorder} ${elf.accentBg} ${
-                limMode ? 'p-3' : 'p-3.5'
-              }`}
-            >
-              <div className="flex flex-col items-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-white bg-white shadow-xs">
-                  <ShapeSvg shapeId={elf.shapeId} size={50} ornamentMode />
-                </div>
-                <h3
-                  className="mt-2.5 text-base font-semibold text-slate-900"
-                  style={{ fontFamily: 'var(--font-display)' }}
-                >
-                  {elf.name}
-                </h3>
-                <span className="mt-0.5 text-[11px] font-semibold text-[#0F5132]">
-                  {elf.role}
-                </span>
-              </div>
+          {ELF_CHARACTERS.map((elf) => {
+            const isSelected = isSpeaking && (speakingElf === elf.id || activeElfId === elf.id);
+            return (
+              <button
+                key={elf.id}
+                type="button"
+                onClick={() => handleSpeakElf(elf.id, elf.greetingSpeech)}
+                className={`group flex flex-col items-center justify-between rounded-xl border-2 text-center transition-all cursor-pointer hover:shadow-md ${elf.accentBorder} ${elf.accentBg} ${
+                  limMode ? 'p-2.5' : 'p-3'
+                } ${isSelected ? 'ring-3 ring-amber-400/70' : ''}`}
+              >
+                <div className="flex flex-col items-center w-full">
+                  <div className="relative">
+                    <div
+                      className={`overflow-hidden rounded-2xl border-2 border-white bg-white shadow-sm transition-transform ${
+                        limMode ? 'h-28 w-28' : 'h-32 w-32 sm:h-36 sm:w-36'
+                      } ${isSelected ? 'elf-speaking-active' : ''}`}
+                    >
+                      <ResilientImage
+                        src={elf.portraitSrc}
+                        alt={`Ritratto fumettistico di ${elf.fullName}`}
+                        fallbackTitle={elf.fullName}
+                        className="h-full w-full object-cover object-top transition-transform duration-200 group-hover:scale-105"
+                      />
+                    </div>
+                    <div
+                      className="absolute -bottom-1.5 -right-1.5 flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white shadow-xs"
+                      aria-hidden="true"
+                    >
+                      <ShapeSvg shapeId={elf.shapeId} size={22} ornamentMode />
+                    </div>
+                  </div>
 
-              <span className="mt-2.5 inline-block rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-bold text-slate-700">
-                {elf.badgeLabel}
-              </span>
-            </div>
-          ))}
+                  <h3
+                    className="mt-3 text-base font-semibold text-slate-900"
+                    style={{ fontFamily: 'var(--font-display)' }}
+                  >
+                    {elf.fullName}
+                  </h3>
+                  <span className="mt-0.5 text-[11px] font-semibold text-[#0F5132]">
+                    {elf.specialtyArea}
+                  </span>
+                </div>
+
+                <div className="mt-2.5 flex w-full flex-col items-center gap-1.5">
+                  <span className="inline-block rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-bold text-slate-700">
+                    {elf.badgeLabel}
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-800">
+                    <Volume2 className="h-3 w-3" aria-hidden="true" />
+                    <span>{isSelected ? 'Sta parlando...' : 'Tocca per ascoltare'}</span>
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         {/* Official EFT Calabria Portal Card */}

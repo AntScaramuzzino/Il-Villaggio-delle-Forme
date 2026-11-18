@@ -13,8 +13,18 @@ import {
   Square,
   Volume2
 } from 'lucide-react';
-import { AUDIO_DELAYS, playClickPop, playSuccessChime, playVictoryFanfare } from '../lib/soundFx';
-import { speakForKids, stopSpeaking, toggleSpeakForKids, useSpeakingState } from '../lib/ttsVoice';
+import { ELF_BY_ID } from '../data/elfCharacters';
+import {
+  AUDIO_DELAYS,
+  playClickPop,
+  playMagnetSnap,
+  playPieceFlip,
+  playPiecePickup,
+  playPieceRotate,
+  playSlotSnap,
+  playVictoryFanfare
+} from '../lib/soundFx';
+import { speakForKids, stopSpeaking, toggleSpeakForKids, useSpeakingElf, useSpeakingState } from '../lib/ttsVoice';
 import { ResilientImage } from './ResilientImage';
 
 type TanKind = 'big-tri' | 'med-tri' | 'small-tri' | 'square' | 'parallelogram';
@@ -462,6 +472,8 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
 
   const model = TANGRAM_MODELS[modelIdx];
   const isFreeMode = model.targets.length === 0;
+  const speakingElf = useSpeakingElf();
+  const isLorenzoSpeaking = speakingElf === 'lorenzo';
   const snappedCount = useMemo(
     () => pieces.filter((p) => p.snappedSlotId !== null).length,
     [pieces]
@@ -508,7 +520,7 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
         ? 'Fabbrica Libera con Calamita attiva! Avvicina due pezzi al centro per agganciarli tra loro.'
         : `Nuovo modello: ${chosen.title}! Trascina i pezzi e ruotali di 45° per incastrarli.`;
     setStatusMessage(msg);
-    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick });
+    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick, elfId: 'lorenzo' });
   };
 
   const resetBoard = () => {
@@ -528,6 +540,8 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
       if (!magnetEnabled) return list;
       const snap = findMagneticSnap(piece, list);
       if (!snap) return list;
+      playMagnetSnap(soundEnabled);
+      setStatusMessage(`Aggancio magnetico! ${piece.name} si è unito a ${snap.partnerName}.`);
       return list.map((p) =>
         p.id === piece.id
           ? {
@@ -571,19 +585,19 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
       onCompleteFactoryModel(model.id);
       const msg = `Meraviglioso! Hai costruito ${model.christmasObjectArticle}!`;
       setStatusMessage(msg);
-      speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterFanfare });
+      speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterFanfare, elfId: 'lorenzo' });
     } else {
-      playSuccessChime(soundEnabled);
+      playSlotSnap(soundEnabled);
       const msg = `Perfetto! Hai incastrato ${piece.name} (${matchingTarget.name}).`;
       setStatusMessage(msg);
-      speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterChime });
+      speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterChime, elfId: 'lorenzo' });
     }
 
     return updated;
   };
 
   const rotatePieceById = (pieceId: string, delta: number) => {
-    playClickPop(soundEnabled);
+    playPieceRotate(soundEnabled, delta >= 0 ? 1 : -1);
     setSelectedPieceId(pieceId);
     magnetContactRef.current = null;
     setMagnetContact(null);
@@ -600,14 +614,6 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
     const snapped = trySnapPiece(updated, next);
     piecesRef.current = snapped;
     setPieces(snapped);
-
-    if (isFreeMode && magnetEnabled) {
-      const snap = findMagneticSnap(updated, next);
-      if (snap) {
-        playSuccessChime(soundEnabled);
-        setStatusMessage(`${updated.name} ruotato a ${updated.rotation}° e agganciato!`);
-      }
-    }
   };
 
   const rotateSelected = (delta: number) => {
@@ -617,7 +623,7 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
 
   const flipSelected = () => {
     if (!selectedPieceId) return;
-    playClickPop(soundEnabled);
+    playPieceFlip(soundEnabled);
     magnetContactRef.current = null;
     setMagnetContact(null);
 
@@ -652,7 +658,7 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
   const handlePointerDown = (e: React.PointerEvent<SVGGElement>, piece: TanPieceState) => {
     e.stopPropagation();
     (e.currentTarget as SVGGElement).setPointerCapture(e.pointerId);
-    playClickPop(soundEnabled);
+    playPiecePickup(soundEnabled);
     setSelectedPieceId(piece.id);
     const coords = toSvgCoords(e.clientX, e.clientY);
     dragStateRef.current = {
@@ -692,6 +698,14 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
       }
     }
 
+    const prevContact = magnetContactRef.current;
+    if (
+      nextContact &&
+      (!prevContact || Math.hypot(nextContact.x - prevContact.x, nextContact.y - prevContact.y) > 6)
+    ) {
+      playMagnetSnap(soundEnabled);
+    }
+
     magnetContactRef.current = nextContact;
     setMagnetContact(nextContact);
 
@@ -728,7 +742,6 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
     setMagnetContact(null);
 
     if (isFreeMode && magnetEnabled && activeContact) {
-      playSuccessChime(soundEnabled);
       const piece = piecesRef.current.find((p) => p.id === drag.pieceId);
       setStatusMessage(
         piece
@@ -760,7 +773,6 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
     );
     if (!candidatePiece) return;
 
-    playSuccessChime(soundEnabled);
     setSelectedPieceId(candidatePiece.id);
 
     const updated = prev.map((p) =>
@@ -780,12 +792,15 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
 
     const count = updated.filter((p) => p.snappedSlotId !== null).length;
     if (count === model.targets.length) {
+      playVictoryFanfare(soundEnabled);
       onCompleteFactoryModel(model.id);
+    } else {
+      playSlotSnap(soundEnabled);
     }
 
     const msg = `Aiuto: ${candidatePiece.name} va su "${nextSlot.name}"!`;
     setStatusMessage(msg);
-    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterChime });
+    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterChime, elfId: 'lorenzo' });
   };
 
   return (
@@ -1072,7 +1087,19 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
               limMode ? 'mt-1.5 py-1.5 text-xs' : 'mt-2 py-1.5 text-xs sm:text-[13px]'
             }`}
           >
-            <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div
+                className={`h-12 w-12 sm:h-14 sm:w-14 shrink-0 overflow-hidden rounded-xl border-2 border-amber-300/80 bg-white shadow-xs transition-transform ${
+                  isLorenzoSpeaking ? 'elf-speaking-active' : ''
+                }`}
+              >
+                <ResilientImage
+                  src={ELF_BY_ID.lorenzo.portraitSrc}
+                  alt={ELF_BY_ID.lorenzo.fullName}
+                  fallbackTitle={ELF_BY_ID.lorenzo.shortName}
+                  className="h-full w-full object-cover object-top"
+                />
+              </div>
               {isComplete ? (
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-amber-300" aria-hidden="true" />
               ) : (
@@ -1083,7 +1110,7 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
 
             <button
               type="button"
-              onClick={() => toggleSpeakForKids(statusMessage)}
+              onClick={() => toggleSpeakForKids(statusMessage, { elfId: 'lorenzo' })}
               className="inline-flex min-h-[28px] items-center gap-1 rounded-md bg-amber-400 px-2.5 py-0.5 text-[11px] font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer"
             >
               {isSpeaking ? (
@@ -1182,7 +1209,7 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
                       key={p.id}
                       type="button"
                       onClick={() => {
-                        playClickPop(soundEnabled);
+                        playPiecePickup(soundEnabled);
                         setSelectedPieceId(p.id);
                       }}
                       className={`flex items-center justify-between gap-1.5 rounded-md border text-left font-semibold transition-colors cursor-pointer ${

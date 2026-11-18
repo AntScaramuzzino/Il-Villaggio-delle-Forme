@@ -13,8 +13,16 @@ import {
   Volume2
 } from 'lucide-react';
 import { getShapeById, TANGRAM_PUZZLES } from '../data/christmasShapes';
-import { AUDIO_DELAYS, playClickPop, playErrorThud, playSuccessChime, playVictoryFanfare } from '../lib/soundFx';
-import { speakForKids, stopSpeaking, toggleSpeakForKids, useSpeakingState } from '../lib/ttsVoice';
+import { ELF_BY_ID } from '../data/elfCharacters';
+import {
+  AUDIO_DELAYS,
+  playClickPop,
+  playErrorThud,
+  playPiecePickup,
+  playSlotSnap,
+  playVictoryFanfare
+} from '../lib/soundFx';
+import { speakForKids, stopSpeaking, toggleSpeakForKids, useSpeakingElf, useSpeakingState } from '../lib/ttsVoice';
 import { ShapeId, TangramSlot } from '../types/christmasGeometry';
 import { ResilientImage } from './ResilientImage';
 import { ShapeSvg } from './ShapeSvg';
@@ -98,6 +106,8 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
   const puzzle = TANGRAM_PUZZLES[puzzleIdx];
   const containerMax = limMode ? 'max-w-[1600px]' : 'max-w-[1160px]';
   const isSpeaking = useSpeakingState();
+  const speakingElf = useSpeakingElf();
+  const isLorenzoSpeaking = speakingElf === 'lorenzo';
 
   useEffect(() => {
     return () => {
@@ -127,7 +137,7 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
     setFeedbackStatus('neutral');
     const msg = `Nuova scena: ${TANGRAM_PUZZLES[idx].title}. Tocca una forma nel vassoio e poi lo spazio tratteggiato.`;
     setFeedbackMsg(msg);
-    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick });
+    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick, elfId: 'lorenzo' });
   };
 
   const resetCurrentPuzzle = () => {
@@ -138,7 +148,7 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
     setFeedbackStatus('neutral');
     const msg = 'Tavolo pulito! Ricomincia la costruzione natalizia.';
     setFeedbackMsg(msg);
-    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick });
+    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick, elfId: 'lorenzo' });
   };
 
   const tryPlacePiece = (slot: TangramSlot, pieceId: ShapeId) => {
@@ -160,19 +170,19 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
         onCompletePuzzle(puzzle.id);
         const msg = `Fantastico! Hai completato "${puzzle.title}"! ${capArticle} ha svelato ${chosenDef.christmasObjectArticle}!`;
         setFeedbackMsg(msg);
-        speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterFanfare });
+        speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterFanfare, elfId: 'lorenzo' });
       } else {
-        playSuccessChime(soundEnabled);
+        playSlotSnap(soundEnabled);
         const msg = `Perfetto! ${capArticle} è al posto giusto in "${slot.label}" — proprio come ${chosenDef.christmasObjectArticle}!`;
         setFeedbackMsg(msg);
-        speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterChime });
+        speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterChime, elfId: 'lorenzo' });
       }
     } else {
       playErrorThud(soundEnabled);
       setFeedbackStatus('err');
       const msg = `Non entra qui! Hai scelto ${chosenDef.articleName} (${chosenDef.christmasObject}). Indizio: ${slot.hint}`;
       setFeedbackMsg(msg);
-      speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterThud });
+      speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterThud, elfId: 'lorenzo' });
     }
   };
 
@@ -187,12 +197,11 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
       setFeedbackStatus('neutral');
       const msg = `Spazio selezionato: "${slot.label}". ${slot.hint}`;
       setFeedbackMsg(msg);
-      speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick });
+      speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick, elfId: 'lorenzo' });
     }
   };
 
   const handlePieceClick = (pieceId: ShapeId) => {
-    playClickPop(soundEnabled);
     const def = getShapeById(pieceId);
     if (activeSlotId) {
       const targetSlot = puzzle.slots.find((s) => s.slotId === activeSlotId);
@@ -201,11 +210,12 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
         return;
       }
     }
+    playPiecePickup(soundEnabled);
     setSelectedPiece((prev) => (prev === pieceId ? null : pieceId));
     setFeedbackStatus('neutral');
     const msg = `Hai preso ${def.articleName}: ${def.christmasObject}. Ora tocca lo spazio giusto sul disegno!`;
     setFeedbackMsg(msg);
-    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick });
+    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick, elfId: 'lorenzo' });
   };
 
   const handleRevealHint = () => {
@@ -216,7 +226,7 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
     setFeedbackStatus('neutral');
     const msg = `Aiuto per "${firstMissing.label}": ${firstMissing.hint}`;
     setFeedbackMsg(msg);
-    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick });
+    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick, elfId: 'lorenzo' });
   };
 
   return (
@@ -255,9 +265,32 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
           </button>
         </div>
 
-        <span className="font-mono text-[11px] font-semibold text-slate-700 tabular-nums">
-          Completate: {completedPuzzles.length}/{TANGRAM_PUZZLES.length}
-        </span>
+        <div className="flex items-center gap-2.5">
+          <div className="inline-flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50/80 px-2 py-1">
+            <div
+              className={`h-10 w-10 sm:h-11 sm:w-11 shrink-0 overflow-hidden rounded-xl border-2 border-teal-400 bg-white shadow-xs transition-transform ${
+                isLorenzoSpeaking ? 'elf-speaking-active' : ''
+              }`}
+            >
+              <ResilientImage
+                src={ELF_BY_ID.lorenzo.portraitSrc}
+                alt={ELF_BY_ID.lorenzo.fullName}
+                fallbackTitle={ELF_BY_ID.lorenzo.shortName}
+                className="h-full w-full object-cover object-top"
+              />
+            </div>
+            <div className="hidden sm:block leading-tight">
+              <span className="block text-[10px] font-medium text-teal-800">Guida</span>
+              <span className="text-[11px] font-bold text-teal-950 whitespace-nowrap">
+                {ELF_BY_ID.lorenzo.fullName}
+              </span>
+            </div>
+          </div>
+
+          <span className="font-mono text-[11px] font-semibold text-slate-700 tabular-nums">
+            Completate: {completedPuzzles.length}/{TANGRAM_PUZZLES.length}
+          </span>
+        </div>
       </div>
 
       {builderMode === 'tangram' ? (
@@ -503,7 +536,19 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
                     : 'bg-[#083822] text-emerald-50 border border-emerald-300/30'
                 }`}
               >
-                <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div
+                    className={`h-12 w-12 sm:h-14 sm:w-14 shrink-0 overflow-hidden rounded-xl border-2 border-amber-300/80 bg-white shadow-xs transition-transform ${
+                      isLorenzoSpeaking ? 'elf-speaking-active' : ''
+                    }`}
+                  >
+                    <ResilientImage
+                      src={ELF_BY_ID.lorenzo.portraitSrc}
+                      alt={ELF_BY_ID.lorenzo.fullName}
+                      fallbackTitle={ELF_BY_ID.lorenzo.shortName}
+                      className="h-full w-full object-cover object-top"
+                    />
+                  </div>
                   {isCompleted && <Sparkles className="h-3.5 w-3.5 shrink-0 text-amber-300" aria-hidden="true" />}
                   <span className={limMode ? 'line-clamp-2' : ''}>{feedbackMsg}</span>
                 </div>
@@ -511,7 +556,7 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     type="button"
-                    onClick={() => toggleSpeakForKids(feedbackMsg)}
+                    onClick={() => toggleSpeakForKids(feedbackMsg, { elfId: 'lorenzo' })}
                     className="inline-flex min-h-[28px] items-center gap-1 rounded-md bg-amber-400 px-2.5 py-0.5 text-[11px] font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     {isSpeaking ? (
@@ -590,6 +635,7 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
                         draggable={remainingForShape > 0}
                         onDragStart={(e) => {
                           e.dataTransfer.setData('text/plain', shapeId);
+                          playPiecePickup(soundEnabled);
                           setSelectedPiece(shapeId);
                         }}
                         disabled={remainingForShape === 0}

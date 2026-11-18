@@ -25,7 +25,7 @@ const NAV_ITEMS: Array<{
   { id: 'indovinelli', label: 'Indovinelli', shortLabel: 'Quiz', icon: HelpCircle },
   { id: 'atlante', label: 'Atlante', shortLabel: 'Atlante', icon: BookOpen },
   { id: 'dashboard', label: 'Dashboard', shortLabel: 'Stelle', icon: BarChart3 },
-  { id: 'istruzioni', label: 'Istruzioni', shortLabel: 'Canvas', icon: Wand2 },
+  { id: 'istruzioni', label: 'Istruzioni', shortLabel: 'Istruzioni', icon: Wand2 },
   { id: 'credits', label: 'Credits', shortLabel: 'Credits', icon: Award }
 ];
 
@@ -100,7 +100,19 @@ export default function App() {
   const [fallbackFullscreen, setFallbackFullscreen] = useState(false);
   const [showWelcome, setShowWelcome] = useState<boolean>(() => !hasSeenWelcome());
   const [resetSignal, setResetSignal] = useState(0);
+  const [transitionDir, setTransitionDir] = useState<'forward' | 'backward' | 'pop'>('pop');
   const [stats, setStats] = useState<WorkshopStats>(loadInitialStats);
+
+  const triggerToolbarPop = (button: HTMLButtonElement | null) => {
+    if (!button) return;
+    button.classList.remove('is-popping');
+    void button.offsetWidth;
+    button.classList.add('is-popping');
+  };
+
+  const handlePopAnimationEnd = (event: React.AnimationEvent<HTMLButtonElement>) => {
+    event.currentTarget.classList.remove('is-popping');
+  };
 
   const handleToggleSnow = () => {
     playClickPop(soundEnabled);
@@ -315,6 +327,7 @@ export default function App() {
   const handleNewGame = () => {
     playClickPop(soundEnabled);
     stopSpeaking();
+    setTransitionDir('pop');
     setSection('slitta');
     setResetSignal((n) => n + 1);
   };
@@ -322,8 +335,20 @@ export default function App() {
   const handleSelectSection = (next: GameSection) => {
     playClickPop(soundEnabled);
     stopSpeaking();
+    if (next !== section) {
+      const prevIdx = NAV_ITEMS.findIndex((item) => item.id === section);
+      const nextIdx = NAV_ITEMS.findIndex((item) => item.id === next);
+      setTransitionDir(nextIdx >= prevIdx ? 'forward' : 'backward');
+    }
     setSection(next);
   };
+
+  const sectionTransitionClass =
+    transitionDir === 'forward'
+      ? 'section-transition-forward'
+      : transitionDir === 'backward'
+        ? 'section-transition-backward'
+        : 'section-transition-pop';
 
   const handleToggleSound = () => {
     setSoundEnabled((prev) => {
@@ -360,8 +385,12 @@ export default function App() {
             <span className="hidden sm:block h-5 w-px bg-slate-200" aria-hidden="true" />
             <button
               type="button"
-              onClick={() => handleSelectSection('slitta')}
-              className="text-left text-sm lg:text-base font-semibold tracking-tight text-[#0F5132] touch-none select-none whitespace-nowrap shrink-0 cursor-pointer"
+              onClick={(e) => {
+                triggerToolbarPop(e.currentTarget);
+                handleSelectSection('slitta');
+              }}
+              onAnimationEnd={handlePopAnimationEnd}
+              className="toolbar-pop-btn text-left text-sm lg:text-base font-semibold tracking-tight text-[#0F5132] touch-none select-none whitespace-nowrap shrink-0 cursor-pointer"
               style={{ fontFamily: 'var(--font-display)' }}
             >
               Villaggio delle Forme
@@ -379,8 +408,12 @@ export default function App() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => handleSelectSection(item.id)}
-                  className={`relative min-h-[30px] px-1 py-0.5 transition-colors touch-none select-none whitespace-nowrap shrink-0 cursor-pointer ${
+                  onClick={(e) => {
+                    triggerToolbarPop(e.currentTarget);
+                    handleSelectSection(item.id);
+                  }}
+                  onAnimationEnd={handlePopAnimationEnd}
+                  className={`toolbar-pop-btn relative min-h-[30px] px-1 py-0.5 touch-none select-none whitespace-nowrap shrink-0 cursor-pointer ${
                     isActive
                       ? 'text-slate-900 font-semibold'
                       : 'text-slate-600 hover:text-slate-900'
@@ -389,7 +422,7 @@ export default function App() {
                   <span className="lg:hidden">{item.shortLabel}</span>
                   <span className="hidden lg:inline">{item.label}</span>
                   {isActive && (
-                    <span className="absolute inset-x-0 -bottom-[7px] h-[2px] bg-red-600" />
+                    <span className="nav-indicator-active absolute inset-x-0 -bottom-[7px] h-[2px] bg-red-600" />
                   )}
                 </button>
               );
@@ -399,8 +432,12 @@ export default function App() {
           <div className="shrink-0">
             <button
               type="button"
-              onClick={handleNewGame}
-              className="min-h-[30px] rounded-md bg-red-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-red-700 transition-colors touch-none select-none whitespace-nowrap shrink-0 cursor-pointer"
+              onClick={(e) => {
+                triggerToolbarPop(e.currentTarget);
+                handleNewGame();
+              }}
+              onAnimationEnd={handlePopAnimationEnd}
+              className="toolbar-pop-btn min-h-[30px] rounded-md bg-red-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-red-700 touch-none select-none whitespace-nowrap shrink-0 cursor-pointer"
             >
               Nuova Partita
             </button>
@@ -418,12 +455,14 @@ export default function App() {
           <div className="flex flex-wrap items-center gap-1.5">
             <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                triggerToolbarPop(e.currentTarget);
                 playClickPop(soundEnabled);
                 setShowWelcome(true);
               }}
+              onAnimationEnd={handlePopAnimationEnd}
               aria-expanded={showWelcome}
-              className="inline-flex min-h-[28px] items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors touch-none select-none whitespace-nowrap shrink-0 cursor-pointer"
+              className="toolbar-pop-btn inline-flex min-h-[28px] items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 touch-none select-none whitespace-nowrap shrink-0 cursor-pointer"
             >
               <HelpCircle className="h-3 w-3 text-amber-600" aria-hidden="true" />
               <span>Guida</span>
@@ -431,12 +470,14 @@ export default function App() {
 
             <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                triggerToolbarPop(e.currentTarget);
                 playClickPop(soundEnabled);
                 setLimMode((prev) => !prev);
               }}
+              onAnimationEnd={handlePopAnimationEnd}
               aria-pressed={limMode}
-              className={`inline-flex min-h-[28px] items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-colors touch-none select-none whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`toolbar-pop-btn inline-flex min-h-[28px] items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold touch-none select-none whitespace-nowrap shrink-0 cursor-pointer ${
                 limMode
                   ? 'border-[#0F5132] bg-[#0F5132] text-white'
                   : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
@@ -448,9 +489,13 @@ export default function App() {
 
             <button
               type="button"
-              onClick={toggleFullscreen}
+              onClick={(e) => {
+                triggerToolbarPop(e.currentTarget);
+                void toggleFullscreen();
+              }}
+              onAnimationEnd={handlePopAnimationEnd}
               aria-pressed={isFullscreen}
-              className={`inline-flex min-h-[28px] items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-colors touch-none select-none whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`toolbar-pop-btn inline-flex min-h-[28px] items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold touch-none select-none whitespace-nowrap shrink-0 cursor-pointer ${
                 isFullscreen
                   ? 'border-slate-900 bg-slate-900 text-white hover:bg-slate-800'
                   : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
@@ -466,9 +511,13 @@ export default function App() {
 
             <button
               type="button"
-              onClick={handleToggleSnow}
+              onClick={(e) => {
+                triggerToolbarPop(e.currentTarget);
+                handleToggleSnow();
+              }}
+              onAnimationEnd={handlePopAnimationEnd}
               aria-pressed={snowEnabled}
-              className={`inline-flex min-h-[28px] items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-colors touch-none select-none whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`toolbar-pop-btn inline-flex min-h-[28px] items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold touch-none select-none whitespace-nowrap shrink-0 cursor-pointer ${
                 snowEnabled
                   ? 'border-sky-300 bg-sky-50 text-sky-900 hover:bg-sky-100'
                   : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
@@ -483,8 +532,12 @@ export default function App() {
 
             <button
               type="button"
-              onClick={handleToggleSound}
-              className="inline-flex min-h-[28px] items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 touch-none select-none whitespace-nowrap shrink-0 cursor-pointer"
+              onClick={(e) => {
+                triggerToolbarPop(e.currentTarget);
+                handleToggleSound();
+              }}
+              onAnimationEnd={handlePopAnimationEnd}
+              className="toolbar-pop-btn inline-flex min-h-[28px] items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 touch-none select-none whitespace-nowrap shrink-0 cursor-pointer"
             >
               {soundEnabled ? (
                 <Volume2 className="h-3 w-3 text-[#0F5132]" aria-hidden="true" />
@@ -501,74 +554,79 @@ export default function App() {
         data-game-area="true"
         className={
           limMode
-            ? 'flex-1 min-h-0 md:overflow-hidden md:touch-none overscroll-none select-none'
-            : 'flex-1'
+            ? 'flex-1 min-h-0 overflow-x-hidden md:overflow-hidden md:touch-none overscroll-none select-none'
+            : 'flex-1 overflow-x-hidden'
         }
       >
-        {section === 'slitta' && (
-          <SleighChallengeGame
-            level={level}
-            onChangeLevel={setLevel}
-            soundEnabled={soundEnabled}
-            onToggleSound={handleToggleSound}
-            bestScore={stats.bestSleighScore}
-            onRecordScore={handleRecordScore}
-            resetSignal={resetSignal}
-            limMode={limMode}
-          />
-        )}
+        <div
+          key={section === 'slitta' ? `slitta-${resetSignal}` : section}
+          className={`${sectionTransitionClass} ${limMode ? 'h-full min-h-0' : ''}`}
+        >
+          {section === 'slitta' && (
+            <SleighChallengeGame
+              level={level}
+              onChangeLevel={setLevel}
+              soundEnabled={soundEnabled}
+              onToggleSound={handleToggleSound}
+              bestScore={stats.bestSleighScore}
+              onRecordScore={handleRecordScore}
+              resetSignal={resetSignal}
+              limMode={limMode}
+            />
+          )}
 
-        {section === 'albero' && (
-          <TreeBuilderGame
-            soundEnabled={soundEnabled}
-            completedPuzzles={stats.completedPuzzles}
-            onCompletePuzzle={handleCompletePuzzle}
-            limMode={limMode}
-          />
-        )}
+          {section === 'albero' && (
+            <TreeBuilderGame
+              soundEnabled={soundEnabled}
+              completedPuzzles={stats.completedPuzzles}
+              onCompletePuzzle={handleCompletePuzzle}
+              limMode={limMode}
+            />
+          )}
 
-        {section === 'indovinelli' && (
-          <RiddlesQuiz
-            level={level}
-            onChangeLevel={setLevel}
-            soundEnabled={soundEnabled}
-            solvedRiddles={stats.solvedRiddles}
-            onSolveRiddle={handleSolveRiddle}
-            limMode={limMode}
-          />
-        )}
+          {section === 'indovinelli' && (
+            <RiddlesQuiz
+              level={level}
+              onChangeLevel={setLevel}
+              soundEnabled={soundEnabled}
+              solvedRiddles={stats.solvedRiddles}
+              onSolveRiddle={handleSolveRiddle}
+              limMode={limMode}
+            />
+          )}
 
-        {section === 'atlante' && (
-          <ShapesAtlas
-            soundEnabled={soundEnabled}
-            onExploreShape={handleExploreShape}
-            limMode={limMode}
-          />
-        )}
+          {section === 'atlante' && (
+            <ShapesAtlas
+              soundEnabled={soundEnabled}
+              onExploreShape={handleExploreShape}
+              limMode={limMode}
+            />
+          )}
 
-        {section === 'dashboard' && (
-          <ProgressDashboard
-            stats={stats}
-            soundEnabled={soundEnabled}
-            onNavigate={setSection}
-            onResetStats={handleResetStats}
-            limMode={limMode}
-          />
-        )}
+          {section === 'dashboard' && (
+            <ProgressDashboard
+              stats={stats}
+              soundEnabled={soundEnabled}
+              onNavigate={handleSelectSection}
+              onResetStats={handleResetStats}
+              limMode={limMode}
+            />
+          )}
 
-        {section === 'istruzioni' && (
-          <CanvasGuidePage
-            soundEnabled={soundEnabled}
-            limMode={limMode}
-          />
-        )}
+          {section === 'istruzioni' && (
+            <CanvasGuidePage
+              soundEnabled={soundEnabled}
+              limMode={limMode}
+            />
+          )}
 
-        {section === 'credits' && (
-          <CreditsPage
-            soundEnabled={soundEnabled}
-            limMode={limMode}
-          />
-        )}
+          {section === 'credits' && (
+            <CreditsPage
+              soundEnabled={soundEnabled}
+              limMode={limMode}
+            />
+          )}
+        </div>
       </main>
 
       {!limMode && !isFullscreen && (
@@ -594,7 +652,7 @@ export default function App() {
                   onClick={() => handleSelectSection('istruzioni')}
                   className="text-[#0F5132] hover:underline cursor-pointer"
                 >
-                  Google Canvas
+                  Istruzioni
                 </button>
                 <span aria-hidden="true">·</span>
                 <button
@@ -622,13 +680,17 @@ export default function App() {
             <button
               key={item.id}
               type="button"
-              onClick={() => handleSelectSection(item.id)}
-              className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors touch-none select-none cursor-pointer ${
+              onClick={(e) => {
+                triggerToolbarPop(e.currentTarget);
+                handleSelectSection(item.id);
+              }}
+              onAnimationEnd={handlePopAnimationEnd}
+              className={`toolbar-pop-btn flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold touch-none select-none cursor-pointer ${
                 isActive ? 'text-red-600' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Icon className="h-4 w-4" aria-hidden="true" />
-              <span className="truncate max-w-[48px]">{item.shortLabel}</span>
+              <span className="truncate max-w-full px-0.5">{item.shortLabel}</span>
             </button>
           );
         })}

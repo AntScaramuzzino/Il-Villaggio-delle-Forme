@@ -72,6 +72,121 @@
   font-variant-numeric: tabular-nums;
 }
 
+@keyframes toolbar-pop-bounce {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(0.9);
+  }
+  60% {
+    transform: scale(1.09);
+  }
+  82% {
+    transform: scale(0.97);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.toolbar-pop-btn {
+  transform-origin: center;
+  will-change: transform;
+  transition: transform 130ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.toolbar-pop-btn:active {
+  transform: scale(0.91);
+}
+
+.toolbar-pop-btn.is-popping {
+  animation: toolbar-pop-bounce 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes elf-speaking-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.78), 0 0 12px rgba(251, 191, 36, 0.4);
+  }
+  50% {
+    transform: scale(1.045);
+    box-shadow: 0 0 0 8px rgba(251, 191, 36, 0), 0 0 18px rgba(251, 191, 36, 0.6);
+  }
+}
+
+.elf-speaking-active {
+  border-color: #fbbf24 !important;
+  animation: elf-speaking-pulse 1.35s ease-in-out infinite;
+}
+
+@keyframes section-enter-forward {
+  0% {
+    opacity: 0;
+    transform: translate3d(26px, 4px, 0) scale(0.988);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes section-enter-backward {
+  0% {
+    opacity: 0;
+    transform: translate3d(-26px, 4px, 0) scale(0.988);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes section-enter-pop {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.984);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes nav-indicator-in {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.35);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+.section-transition-forward {
+  will-change: transform, opacity;
+  animation: section-enter-forward 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.section-transition-backward {
+  will-change: transform, opacity;
+  animation: section-enter-backward 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.section-transition-pop {
+  will-change: transform, opacity;
+  animation: section-enter-pop 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.nav-indicator-active {
+  transform-origin: center;
+  animation: nav-indicator-in 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @keyframes snowfall-drift {
   0% {
     transform: translate3d(0, -10vh, 0);

@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, Heart, HelpCircle, Pause, Play, RotateCcw, Square, Star, Volume2, VolumeX, XCircle } from 'lucide-react';
 import { getShapeById, getShapesForLevel, SCHOOL_LEVEL_INFO } from '../data/christmasShapes';
+import { ELF_BY_ID } from '../data/elfCharacters';
 import { AUDIO_DELAYS, playClickPop, playErrorThud, playSuccessChime, playVictoryFanfare } from '../lib/soundFx';
-import { speakForKids, stopSpeaking, toggleSpeakForKids, useSpeakingState } from '../lib/ttsVoice';
+import { speakForKids, stopSpeaking, toggleSpeakForKids, useSpeakingElf, useSpeakingState } from '../lib/ttsVoice';
 import { ChristmasShapeDef, GameState, SchoolLevel, ShapeId } from '../types/christmasGeometry';
 import { ResilientImage } from './ResilientImage';
 import { ShapeSvg } from './ShapeSvg';
@@ -96,6 +97,8 @@ export const SleighChallengeGame: React.FC<SleighChallengeGameProps> = ({
   const [loadedGifts, setLoadedGifts] = useState<ShapeId[]>([]);
 
   const isSpeaking = useSpeakingState();
+  const speakingElf = useSpeakingElf();
+  const isAntonioSpeaking = speakingElf === 'antonio';
   const gameOverTimerRef = useRef<number | null>(null);
 
   const clearGameOverTimer = useCallback(() => {
@@ -119,7 +122,8 @@ export const SleighChallengeGame: React.FC<SleighChallengeGameProps> = ({
   useEffect(() => {
     if (gameState === 'PLAYING' && currentQuestion && feedback === null) {
       speakForKids(currentQuestion.promptText, soundEnabled, {
-        delayMs: AUDIO_DELAYS.afterClick
+        delayMs: AUDIO_DELAYS.afterClick,
+        elfId: 'antonio'
       });
     } else if (gameState !== 'PLAYING') {
       stopSpeaking();
@@ -172,7 +176,10 @@ export const SleighChallengeGame: React.FC<SleighChallengeGameProps> = ({
         isCorrect: true,
         message: `${msg} (+${pointsEarned} punti)`
       });
-      speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterChime });
+      speakForKids(msg, soundEnabled, {
+        delayMs: AUDIO_DELAYS.afterChime,
+        elfId: 'antonio'
+      });
     } else {
       playErrorThud(soundEnabled);
       const nextLives = lives - 1;
@@ -199,7 +206,8 @@ export const SleighChallengeGame: React.FC<SleighChallengeGameProps> = ({
 
       speakForKids(msg, soundEnabled, {
         delayMs: AUDIO_DELAYS.afterThud,
-        onEnd: nextLives <= 0 ? triggerGameOver : undefined
+        onEnd: nextLives <= 0 ? triggerGameOver : undefined,
+        elfId: 'antonio'
       });
     }
   };
@@ -219,7 +227,7 @@ export const SleighChallengeGame: React.FC<SleighChallengeGameProps> = ({
       speakForKids(
         `Bravissimo! Hai caricato la slitta con ${score} punti e vinto ${starsEarned} stelle!`,
         soundEnabled,
-        { delayMs: AUDIO_DELAYS.afterFanfare }
+        { delayMs: AUDIO_DELAYS.afterFanfare, elfId: 'antonio' }
       );
       return;
     }
@@ -355,21 +363,25 @@ export const SleighChallengeGame: React.FC<SleighChallengeGameProps> = ({
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0F5132] via-[#0F5132]/30 to-transparent" />
             </div>
-            <div className={`flex shrink-0 items-center gap-2.5 ${limMode ? 'p-3' : 'p-3.5'}`}>
-              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-white/25 bg-white">
+            <div className={`flex shrink-0 items-center gap-3.5 ${limMode ? 'p-3' : 'p-3.5'}`}>
+              <div
+                className={`h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-xl border-2 border-amber-300/80 bg-white shadow-sm transition-transform ${
+                  isAntonioSpeaking ? 'elf-speaking-active' : ''
+                }`}
+              >
                 <ResilientImage
-                  src="/src/assets/images/elf_craftsman_avatar_1794993394306.jpg"
-                  alt="Elfo Pino con squadra gialla"
-                  fallbackTitle="Elfo Pino"
-                  className="h-full w-full object-cover"
+                  src={ELF_BY_ID.antonio.portraitSrc}
+                  alt={ELF_BY_ID.antonio.fullName}
+                  fallbackTitle={ELF_BY_ID.antonio.fullName}
+                  className="h-full w-full object-cover object-top"
                 />
               </div>
               <div>
                 <h2 className="text-xs sm:text-sm font-semibold text-white">
-                  La voce dell’Elfo Pino
+                  La voce di Elfo Antonio
                 </h2>
                 <p className="mt-0.5 text-[11px] leading-snug text-emerald-100">
-                  L’elfo legge le richieste ad alta voce e svela l’oggetto di Natale nascosto in ogni forma.
+                  Elfo Antonio legge le richieste ad alta voce e svela l’oggetto di Natale nascosto in ogni forma.
                 </p>
               </div>
             </div>
@@ -404,7 +416,7 @@ export const SleighChallengeGame: React.FC<SleighChallengeGameProps> = ({
                   speakForKids(
                     `${shape.name}: sembra ${shape.christmasObjectArticle}. ${shape.schoolTip}`,
                     soundEnabled,
-                    { delayMs: AUDIO_DELAYS.afterClick }
+                    { delayMs: AUDIO_DELAYS.afterClick, elfId: 'antonio' }
                   );
                 }}
                 className="flex flex-col items-center rounded-lg border border-slate-200 bg-slate-50 p-1.5 text-center text-slate-900 hover:border-[#0F5132] hover:bg-emerald-50/40 transition-colors cursor-pointer"
@@ -642,18 +654,22 @@ export const SleighChallengeGame: React.FC<SleighChallengeGameProps> = ({
           <div className="absolute inset-0 bg-[#0F5132]/75" aria-hidden="true" />
 
           <div className="relative z-10">
-            <div className="flex items-center gap-2.5">
-              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-white/30 bg-white">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div
+                className={`h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-xl border-2 border-amber-300/80 bg-white shadow-sm transition-transform ${
+                  isAntonioSpeaking ? 'elf-speaking-active' : ''
+                }`}
+              >
                 <ResilientImage
-                  src="/src/assets/images/elf_craftsman_avatar_1794993394306.jpg"
-                  alt="Elfo Pino"
-                  fallbackTitle="Elfo"
-                  className="h-full w-full object-cover"
+                  src={ELF_BY_ID.antonio.portraitSrc}
+                  alt={ELF_BY_ID.antonio.fullName}
+                  fallbackTitle={ELF_BY_ID.antonio.shortName}
+                  className="h-full w-full object-cover object-top"
                 />
               </div>
               <div>
                 <span className="text-[11px] font-semibold text-amber-200">
-                  Richiesta dell’Elfo Pino
+                  Richiesta di Elfo Antonio
                 </span>
                 <h2
                   className="mt-0.5 text-base sm:text-lg font-semibold leading-snug text-white"
@@ -670,7 +686,7 @@ export const SleighChallengeGame: React.FC<SleighChallengeGameProps> = ({
                 type="button"
                 onClick={() => {
                   if (currentQuestion) {
-                    toggleSpeakForKids(currentQuestion.promptText);
+                    toggleSpeakForKids(currentQuestion.promptText, { elfId: 'antonio' });
                   }
                 }}
                 className="inline-flex min-h-[30px] items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-1 text-[11px] font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer"
@@ -691,7 +707,8 @@ export const SleighChallengeGame: React.FC<SleighChallengeGameProps> = ({
                   setShowHint(next);
                   if (next && currentQuestion) {
                     speakForKids(currentQuestion.target.schoolTip, soundEnabled, {
-                      delayMs: AUDIO_DELAYS.afterClick
+                      delayMs: AUDIO_DELAYS.afterClick,
+                      elfId: 'antonio'
                     });
                   }
                 }}

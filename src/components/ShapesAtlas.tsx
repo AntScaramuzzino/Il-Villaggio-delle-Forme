@@ -12,8 +12,9 @@ import {
   ZoomOut
 } from 'lucide-react';
 import { CHRISTMAS_SHAPES } from '../data/christmasShapes';
+import { ELF_BY_ID } from '../data/elfCharacters';
 import { AUDIO_DELAYS, playClickPop } from '../lib/soundFx';
-import { speakForKids, stopSpeaking, toggleSpeakForKids, useSpeakingState } from '../lib/ttsVoice';
+import { speakForKids, stopSpeaking, toggleSpeakForKids, useSpeakingElf, useSpeakingState } from '../lib/ttsVoice';
 import { SchoolLevel, ShapeId } from '../types/christmasGeometry';
 import { ResilientImage } from './ResilientImage';
 import { ShapeSvg } from './ShapeSvg';
@@ -66,6 +67,8 @@ export const ShapesAtlas: React.FC<ShapesAtlasProps> = ({
 
   const containerMax = limMode ? 'max-w-[1600px]' : 'max-w-[1160px]';
   const isSpeaking = useSpeakingState();
+  const speakingElf = useSpeakingElf();
+  const isAlfredoSpeaking = speakingElf === 'alfredo';
 
   useEffect(() => {
     return () => {
@@ -103,7 +106,8 @@ export const ShapesAtlas: React.FC<ShapesAtlasProps> = ({
     onExploreShape?.(shapeId);
     if (announce) {
       speakForKids(`${target.name}: ${target.christmasObject}.`, soundEnabled, {
-        delayMs: AUDIO_DELAYS.afterClick
+        delayMs: AUDIO_DELAYS.afterClick,
+        elfId: 'alfredo'
       });
     }
   };
@@ -184,7 +188,8 @@ export const ShapesAtlas: React.FC<ShapesAtlasProps> = ({
 
   const handleSpeakShape = (shape = activeShape) => {
     toggleSpeakForKids(
-      `${shape.name}. Oggetto di Natale: ${shape.christmasObject}. ${shape.atlasMatchCaption} ${shape.description} ${shape.schoolTip}`
+      `${shape.name}. Oggetto di Natale: ${shape.christmasObject}. ${shape.atlasMatchCaption} ${shape.description} ${shape.schoolTip}`,
+      { elfId: 'alfredo' }
     );
   };
 
@@ -259,18 +264,41 @@ export const ShapesAtlas: React.FC<ShapesAtlasProps> = ({
                 </h2>
               </div>
 
-              <button
-                type="button"
-                onClick={() => handleSpeakShape(activeShape)}
-                className="inline-flex min-h-[30px] items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-1 text-[11px] font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer"
-              >
-                {isSpeaking ? (
-                  <Square className="h-3 w-3 fill-slate-950" aria-hidden="true" />
-                ) : (
-                  <Volume2 className="h-3 w-3" aria-hidden="true" />
-                )}
-                <span>{isSpeaking ? 'Ferma' : 'Ascolta'}</span>
-              </button>
+              <div className="flex items-center gap-2.5 shrink-0">
+                <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/80 px-2 py-1">
+                  <div
+                    className={`h-12 w-12 sm:h-14 sm:w-14 shrink-0 overflow-hidden rounded-xl border-2 border-emerald-400 bg-white shadow-xs transition-transform ${
+                      isAlfredoSpeaking ? 'elf-speaking-active' : ''
+                    }`}
+                  >
+                    <ResilientImage
+                      src={ELF_BY_ID.alfredo.portraitSrc}
+                      alt={ELF_BY_ID.alfredo.fullName}
+                      fallbackTitle={ELF_BY_ID.alfredo.shortName}
+                      className="h-full w-full object-cover object-top"
+                    />
+                  </div>
+                  <div className="hidden sm:block leading-tight">
+                    <span className="block text-[10px] font-medium text-emerald-800">Guida</span>
+                    <span className="text-[11px] font-bold text-emerald-950 whitespace-nowrap">
+                      {ELF_BY_ID.alfredo.fullName}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleSpeakShape(activeShape)}
+                  className="inline-flex min-h-[30px] items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-1 text-[11px] font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  {isSpeaking ? (
+                    <Square className="h-3 w-3 fill-slate-950" aria-hidden="true" />
+                  ) : (
+                    <Volume2 className="h-3 w-3" aria-hidden="true" />
+                  )}
+                  <span>{isSpeaking ? 'Ferma' : 'Ascolta'}</span>
+                </button>
+              </div>
             </div>
 
             {/* Unified Stage Control Bar: Mode Switcher + Stepper */}
