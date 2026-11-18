@@ -40,3 +40,7 @@ npm run build
    - Accedi a [vercel.com](https://vercel.com), seleziona **Add New Project** e importa il repository GitHub.
    - Vercel rileverà automaticamente `vercel.json` e il framework **Vite** (`Build Command: npm run build`, `Output Directory: dist`).
    - **Nessuna variabile d'ambiente è richiesta**: il gioco è interamente client-side e pronto all'uso.
+   - **Nota se compare l'avviso `Build output contains no "functions", "static", or "services" directory`**:
+     1. Apri **Project Settings → Build and Deployment** su Vercel e verifica che **Framework Preset** sia impostato su **Vite**, **Build Command** su `npm run build`, **Output Directory** su `dist` e **Root Directory** sia vuota (non `Other` o `.`).
+     2. Se fai deploy da terminale con Vercel CLI, esegui prima `vercel build` (oppure usa direttamente `vercel --prod` senza `--prebuilt`, perché `--prebuilt` richiede `.vercel/output/static` generato da `vercel build`).
+

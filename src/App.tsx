@@ -171,23 +171,35 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 pb-16 md:pb-0">
+    <div
+      className={`flex flex-col bg-slate-50 text-slate-900 ${
+        limMode ? 'min-h-screen md:h-screen md:overflow-hidden pb-16 md:pb-0' : 'min-h-screen pb-16 md:pb-0'
+      }`}
+    >
       {/* Three-Zone Top Bar */}
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur-xs">
-        <div className="mx-auto flex h-14 md:h-auto max-w-[1440px] items-center justify-between gap-8 px-4 md:py-3 sm:px-6">
-          <button
-            type="button"
-            onClick={() => handleSelectSection('slitta')}
-            className="text-left text-lg font-semibold tracking-tight text-[#0F5132] whitespace-nowrap shrink-0 cursor-pointer"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
-            Villaggio delle Forme
-          </button>
+        <div className="mx-auto flex h-14 md:h-auto max-w-[1440px] items-center justify-between gap-3 lg:gap-8 px-4 md:py-2.5 sm:px-6">
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+            <img
+              src="/assets/aistudio/LOGO_EFT_Calabria_trasparente_29afe73d.png"
+              alt="Logo Équipe Formativa Calabria"
+              className="h-8 w-auto sm:h-10 object-contain shrink-0"
+            />
+            <span className="hidden sm:block h-7 w-px bg-slate-200" aria-hidden="true" />
+            <button
+              type="button"
+              onClick={() => handleSelectSection('slitta')}
+              className="text-left text-base lg:text-lg font-semibold tracking-tight text-[#0F5132] whitespace-nowrap shrink-0 cursor-pointer"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              Villaggio delle Forme
+            </button>
+          </div>
 
           {/* Desktop & Tablet Horizontal Nav */}
           <nav
             aria-label="Navigazione giochi di geometria"
-            className="hidden md:flex items-center gap-4 lg:gap-6 text-sm font-medium text-slate-600"
+            className="hidden md:flex items-center gap-3 lg:gap-6 text-sm font-medium text-slate-600"
           >
             {NAV_ITEMS.map((item) => {
               const isActive = section === item.id;
@@ -224,10 +236,14 @@ export default function App() {
       </header>
 
       {/* Classroom LIM & Tablet Display Toolbar (below header) */}
-      <div className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-4 py-2 sm:px-6">
+      <div className="shrink-0 border-b border-slate-200 bg-white">
+        <div
+          className={`mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-2 px-4 sm:px-6 ${
+            limMode ? 'py-1.5' : 'py-2'
+          }`}
+        >
           <span className="text-xs font-medium text-slate-600">
-            Visualizzazione Aula · {limMode ? 'Testo e forme ingranditi per LIM' : 'Formato standard tablet e PC'}
+            Visualizzazione Aula · {limMode ? 'Modalità LIM orizzontale senza scorrimento' : 'Formato standard tablet e PC'}
           </span>
 
           <div className="flex items-center gap-2">
@@ -238,7 +254,7 @@ export default function App() {
                 setLimMode((prev) => !prev);
               }}
               aria-pressed={limMode}
-              className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border px-3 py-1 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 limMode
                   ? 'border-[#0F5132] bg-[#0F5132] text-white'
                   : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
@@ -251,7 +267,7 @@ export default function App() {
             <button
               type="button"
               onClick={toggleFullscreen}
-              className="inline-flex min-h-[38px] items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer"
+              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer"
             >
               {isFullscreen ? (
                 <Minimize2 className="h-3.5 w-3.5" aria-hidden="true" />
@@ -264,7 +280,7 @@ export default function App() {
             <button
               type="button"
               onClick={handleToggleSound}
-              className="inline-flex min-h-[38px] items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer"
+              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer"
             >
               {soundEnabled ? (
                 <Volume2 className="h-3.5 w-3.5 text-[#0F5132]" aria-hidden="true" />
@@ -277,7 +293,7 @@ export default function App() {
         </div>
       </div>
 
-      <main className="flex-1">
+      <main className={limMode ? 'flex-1 min-h-0 md:overflow-hidden' : 'flex-1'}>
         {section === 'slitta' && (
           <SleighChallengeGame
             level={level}
@@ -330,16 +346,25 @@ export default function App() {
         )}
       </main>
 
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-[1440px] flex-col gap-2 px-4 py-4 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <span>
-            Missione Natale: Il Villaggio delle Forme · Scuola Primaria
-          </span>
-          <span className="font-mono tabular-nums">
-            Stelle raccolte: {stats.totalStars} · Costruzioni: {stats.completedPuzzles.length}/{TANGRAM_PUZZLES.length} · Indovinelli: {stats.solvedRiddles.length}/{RIDDLES_BANK.length}
-          </span>
-        </div>
-      </footer>
+      {!limMode && (
+        <footer className="border-t border-slate-200 bg-white">
+          <div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-4 py-4 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div className="flex items-center gap-3">
+              <img
+                src="/assets/aistudio/LOGO_EFT_Calabria_trasparente_29afe73d.png"
+                alt="Équipe Formativa Calabria"
+                className="h-8 w-auto object-contain shrink-0"
+              />
+              <span className="font-medium">
+                Missione Natale: Il Villaggio delle Forme · Scuola Primaria
+              </span>
+            </div>
+            <span className="font-mono tabular-nums text-slate-500">
+              Stelle raccolte: {stats.totalStars} · Costruzioni: {stats.completedPuzzles.length}/{TANGRAM_PUZZLES.length} · Indovinelli: {stats.solvedRiddles.length}/{RIDDLES_BANK.length}
+            </span>
+          </div>
+        </footer>
+      )}
 
       {/* Mobile & Small Tablet Bottom Thumb-Zone Tab Bar */}
       <nav

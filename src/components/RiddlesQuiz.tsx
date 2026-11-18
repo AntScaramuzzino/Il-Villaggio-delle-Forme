@@ -42,7 +42,7 @@ export const RiddlesQuiz: React.FC<RiddlesQuizProps> = ({
 
   const isAnswered = selectedOption !== null;
   const isCorrect = selectedOption === riddle.correctShapeId;
-  const containerMax = limMode ? 'max-w-[1400px]' : 'max-w-[1200px]';
+  const containerMax = limMode ? 'max-w-[1600px]' : 'max-w-[1200px]';
 
   useEffect(() => {
     if (soundEnabled) {
@@ -96,18 +96,24 @@ export const RiddlesQuiz: React.FC<RiddlesQuizProps> = ({
   };
 
   return (
-    <section className={`mx-auto ${containerMax} px-4 py-5 sm:px-6`}>
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <section
+      className={`mx-auto ${containerMax} px-4 sm:px-6 ${
+        limMode ? 'flex flex-col py-3 md:h-full md:overflow-hidden gap-3' : 'py-5'
+      }`}
+    >
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-4">
         <div>
           <h1
-            className={`font-semibold text-slate-900 ${limMode ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}
+            className="text-2xl sm:text-3xl font-semibold text-slate-900"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             Indovinelli Geometrici di Natale
           </h1>
-          <p className={`mt-1 text-slate-700 ${limMode ? 'text-base' : 'text-sm'}`}>
-            Ascolta gli indizi su lati, vertici e solidi per svelare la forma e il suo oggetto di Natale.
-          </p>
+          {!limMode && (
+            <p className="mt-1 text-sm text-slate-700">
+              Ascolta gli indizi su lati, vertici e solidi per svelare la forma e il suo oggetto di Natale.
+            </p>
+          )}
         </div>
 
         {/* Level selector */}
@@ -123,7 +129,7 @@ export const RiddlesQuiz: React.FC<RiddlesQuizProps> = ({
                 setClueStep(0);
                 setSelectedOption(null);
               }}
-              className={`min-h-[40px] rounded-lg px-3.5 py-1.5 text-xs font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`min-h-[38px] rounded-lg px-3.5 py-1.5 text-xs font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 level === lvl ? 'bg-white text-slate-900 shadow-xs' : 'bg-transparent text-slate-800 hover:bg-white/70'
               }`}
             >
@@ -133,7 +139,11 @@ export const RiddlesQuiz: React.FC<RiddlesQuizProps> = ({
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-6 md:grid-cols-12 md:items-stretch">
+      <div
+        className={`grid grid-cols-1 md:grid-cols-12 md:items-stretch ${
+          limMode ? 'flex-1 min-h-0 gap-4' : 'mt-5 gap-6'
+        }`}
+      >
         {/* Left: Illustrated Starry Night Riddle Stage */}
         <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-[#0F5132] p-6 text-white md:col-span-5">
           <ResilientImage
@@ -223,13 +233,21 @@ export const RiddlesQuiz: React.FC<RiddlesQuizProps> = ({
         </div>
 
         {/* Right: Options & Explanation */}
-        <div className="flex flex-col justify-between rounded-2xl border border-slate-300 bg-white p-6 md:col-span-7">
-          <div>
-            <h2 className={`font-semibold text-slate-900 ${limMode ? 'text-lg' : 'text-base'}`}>
+        <div
+          className={`flex flex-col justify-between rounded-2xl border border-slate-300 bg-white md:col-span-7 ${
+            limMode ? 'p-5 min-h-0' : 'p-6'
+          }`}
+        >
+          <div className={limMode ? 'flex flex-1 flex-col min-h-0' : ''}>
+            <h2 className={`shrink-0 font-semibold text-slate-900 ${limMode ? 'text-base sm:text-lg' : 'text-base'}`}>
               Quale figura corrisponde all’indovinello?
             </h2>
 
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div
+              className={`grid grid-cols-1 sm:grid-cols-2 ${
+                limMode ? 'mt-3 flex-1 min-h-0 sm:grid-rows-2 gap-3' : 'mt-4 gap-4'
+              }`}
+            >
               {riddle.optionShapeIds.map((optId) => {
                 const shape = getShapeById(optId);
                 const chosen = selectedOption === optId;
@@ -249,12 +267,12 @@ export const RiddlesQuiz: React.FC<RiddlesQuizProps> = ({
                     type="button"
                     disabled={isAnswered}
                     onClick={() => handleSelectAnswer(optId)}
-                    className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-4 transition-colors cursor-pointer disabled:cursor-default ${
-                      limMode ? 'min-h-[184px]' : 'min-h-[154px]'
+                    className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-colors cursor-pointer disabled:cursor-default ${
+                      limMode ? 'min-h-[120px]' : 'min-h-[154px] p-4'
                     } ${style}`}
                   >
-                    <ShapeSvg shapeId={optId} size={limMode ? 104 : 84} ornamentMode />
-                    <span className={`font-bold text-slate-900 ${limMode ? 'text-xl' : 'text-base'}`}>
+                    <ShapeSvg shapeId={optId} size={limMode ? 90 : 84} ornamentMode />
+                    <span className={`font-bold text-slate-900 ${limMode ? 'text-lg sm:text-xl' : 'text-base'}`}>
                       {shape.name}
                     </span>
                     <span className="text-xs font-semibold text-red-700">
@@ -266,7 +284,7 @@ export const RiddlesQuiz: React.FC<RiddlesQuizProps> = ({
             </div>
           </div>
 
-          <div className="mt-6">
+          <div className={`shrink-0 ${limMode ? 'mt-3' : 'mt-6'}`}>
             {isAnswered ? (
               <div
                 className={`flex flex-wrap items-center justify-between gap-4 rounded-xl border-2 p-4 ${

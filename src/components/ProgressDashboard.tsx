@@ -43,7 +43,7 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
   const puzzleStars = stats.completedPuzzles.length * 2;
   const riddleStars = stats.solvedRiddles.length;
   const sleighStars = stats.sleighStars;
-  const containerMax = limMode ? 'max-w-[1400px]' : 'max-w-[1200px]';
+  const containerMax = limMode ? 'max-w-[1600px]' : 'max-w-[1200px]';
 
   const chartData: GameChartDatum[] = useMemo(
     () => [
@@ -84,9 +84,13 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
   const yMax = Math.max(6, ...chartData.map((d) => d.stars + 1));
 
   return (
-    <section className={`mx-auto ${containerMax} px-4 py-5 sm:px-6`}>
+    <section
+      className={`mx-auto ${containerMax} px-4 sm:px-6 ${
+        limMode ? 'flex flex-col py-3 md:h-full md:overflow-hidden gap-3' : 'py-5'
+      }`}
+    >
       {/* Illustrated Workshop Banner Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-[#0F5132] p-6 text-white">
+      <div className={`relative shrink-0 overflow-hidden rounded-2xl bg-[#0F5132] text-white ${limMode ? 'px-5 py-3.5' : 'p-6'}`}>
         <ResilientImage
           src="/src/assets/images/christmas_workshop_banner_1794993393827.jpg"
           alt="Officina natalizia del Villaggio delle Forme"
@@ -98,14 +102,16 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1
-              className={`font-semibold text-white ${limMode ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}
+              className={`font-semibold text-white ${limMode ? 'text-2xl sm:text-3xl' : 'text-2xl sm:text-3xl'}`}
               style={{ fontFamily: 'var(--font-display)' }}
             >
               Dashboard dei Progressi della Classe
             </h1>
-            <p className={`mt-1 text-emerald-100 ${limMode ? 'text-base' : 'text-sm'}`}>
-              Controlla quante stelle hai raccolto in ciascun gioco del Villaggio delle Forme.
-            </p>
+            {!limMode && (
+              <p className="mt-1 text-sm text-emerald-100">
+                Controlla quante stelle hai raccolto in ciascun gioco del Villaggio delle Forme.
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -116,7 +122,7 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
                   playClickPop(soundEnabled);
                   setConfirmReset(true);
                 }}
-                className="inline-flex min-h-[42px] items-center gap-1.5 rounded-lg border border-white bg-white px-3.5 py-2 text-xs font-bold text-slate-900 hover:bg-amber-50 whitespace-nowrap shrink-0 cursor-pointer"
+                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-white bg-white px-3.5 py-1.5 text-xs font-bold text-slate-900 hover:bg-amber-50 whitespace-nowrap shrink-0 cursor-pointer"
               >
                 <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Azzera Progressi</span>
@@ -149,46 +155,48 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
       </div>
 
       {/* KPI Strip */}
-      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-slate-300 bg-white p-5">
+      <div className={`grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 ${limMode ? '' : 'mt-5 gap-4'}`}>
+        <div className={`rounded-xl border border-slate-300 bg-white ${limMode ? 'p-3.5' : 'p-5'}`}>
           <span className="text-xs font-medium text-slate-600">Stelle Totali</span>
-          <div className="mt-2 flex items-center gap-2">
-            <Star className="h-6 w-6 fill-amber-400 text-amber-500" aria-hidden="true" />
+          <div className="mt-1 flex items-center gap-2">
+            <Star className="h-5 w-5 fill-amber-400 text-amber-500" aria-hidden="true" />
             <span className="font-mono text-2xl font-semibold text-slate-900 tabular-nums">
               {stats.totalStars}
             </span>
           </div>
-          <span className="mt-1 block text-xs text-slate-500">
-            Somma di tutti i giochi
-          </span>
+          {!limMode && (
+            <span className="mt-1 block text-xs text-slate-500">
+              Somma di tutti i giochi
+            </span>
+          )}
         </div>
 
-        <div className="rounded-xl border border-slate-300 bg-white p-5">
+        <div className={`rounded-xl border border-slate-300 bg-white ${limMode ? 'p-3.5' : 'p-5'}`}>
           <span className="text-xs font-medium text-slate-600">Record Sfida Slitta</span>
-          <span className="mt-2 block font-mono text-2xl font-semibold text-slate-900 tabular-nums">
+          <span className="mt-1 block font-mono text-2xl font-semibold text-slate-900 tabular-nums">
             {stats.bestSleighScore} pt
           </span>
-          <span className="mt-1 block text-xs text-slate-500 tabular-nums">
+          <span className="mt-0.5 block text-xs text-slate-500 tabular-nums">
             {stats.sleighRoundsCompleted} viaggi completati
           </span>
         </div>
 
-        <div className="rounded-xl border border-slate-300 bg-white p-5">
+        <div className={`rounded-xl border border-slate-300 bg-white ${limMode ? 'p-3.5' : 'p-5'}`}>
           <span className="text-xs font-medium text-slate-600">Costruzioni Albero Magico</span>
-          <span className="mt-2 block font-mono text-2xl font-semibold text-[#0F5132] tabular-nums">
+          <span className="mt-1 block font-mono text-2xl font-semibold text-[#0F5132] tabular-nums">
             {stats.completedPuzzles.length}/{TANGRAM_PUZZLES.length}
           </span>
-          <span className="mt-1 block text-xs text-slate-500 tabular-nums">
+          <span className="mt-0.5 block text-xs text-slate-500 tabular-nums">
             {puzzleStars} stelle vinte (2 per scena)
           </span>
         </div>
 
-        <div className="rounded-xl border border-slate-300 bg-white p-5">
+        <div className={`rounded-xl border border-slate-300 bg-white ${limMode ? 'p-3.5' : 'p-5'}`}>
           <span className="text-xs font-medium text-slate-600">Indovinelli e Atlante</span>
-          <span className="mt-2 block font-mono text-2xl font-semibold text-slate-900 tabular-nums">
+          <span className="mt-1 block font-mono text-2xl font-semibold text-slate-900 tabular-nums">
             {stats.solvedRiddles.length}/{RIDDLES_BANK.length}
           </span>
-          <span className="mt-1 block text-xs text-slate-500 tabular-nums">
+          <span className="mt-0.5 block text-xs text-slate-500 tabular-nums">
             {stats.exploredShapes.length}/{CHRISTMAS_SHAPES.length} forme esplorate
           </span>
         </div>
@@ -232,24 +240,30 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
       )}
 
       {/* Main Chart + Per-Game Summary Grid */}
-      <div className="mt-5 grid grid-cols-1 gap-6 md:grid-cols-12 md:items-stretch">
+      <div
+        className={`grid grid-cols-1 md:grid-cols-12 md:items-stretch ${
+          limMode ? 'flex-1 min-h-0 gap-4' : 'mt-5 gap-6'
+        }`}
+      >
         {/* Left: Recharts Bar Chart */}
-        <div className="flex flex-col justify-between rounded-2xl border border-slate-300 bg-white p-6 md:col-span-7">
-          <div>
+        <div className={`flex flex-col justify-between rounded-2xl border border-slate-300 bg-white md:col-span-7 ${limMode ? 'p-4 min-h-0' : 'p-6'}`}>
+          <div className="shrink-0">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className={`font-semibold text-slate-900 ${limMode ? 'text-xl' : 'text-lg'}`}>
+              <h2 className={`font-semibold text-slate-900 ${limMode ? 'text-lg' : 'text-lg'}`}>
                 Stelle guadagnate in ogni gioco
               </h2>
               <span className="font-mono text-xs font-semibold text-slate-600 tabular-nums">
                 Totale: {stats.totalStars} stelle
               </span>
             </div>
-            <p className="mt-1 text-xs text-slate-500">
-              Confronto tra Sfida Slitta, Tangram & Scene e Indovinelli Geometrici.
-            </p>
+            {!limMode && (
+              <p className="mt-1 text-xs text-slate-500">
+                Confronto tra Sfida Slitta, Tangram & Scene e Indovinelli Geometrici.
+              </p>
+            )}
           </div>
 
-          <div className={`mt-5 w-full ${limMode ? 'h-[340px]' : 'h-[290px]'}`}>
+          <div className={`w-full ${limMode ? 'mt-2 flex-1 min-h-[180px]' : 'mt-5 h-[290px]'}`}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}
@@ -314,20 +328,22 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
         </div>
 
         {/* Right: Detailed Per-Game Progress List */}
-        <div className="flex flex-col justify-between rounded-2xl border border-slate-300 bg-white p-6 md:col-span-5">
+        <div className={`flex flex-col justify-between rounded-2xl border border-slate-300 bg-white md:col-span-5 ${limMode ? 'p-4 min-h-0' : 'p-6'}`}>
           <div>
-            <h2 className={`font-semibold text-slate-900 ${limMode ? 'text-xl' : 'text-lg'}`}>
+            <h2 className={`font-semibold text-slate-900 ${limMode ? 'text-lg' : 'text-lg'}`}>
               Dettaglio Attività
             </h2>
-            <p className="mt-1 text-xs text-slate-600">
-              Scegli un gioco per guadagnare nuove stelle.
-            </p>
+            {!limMode && (
+              <p className="mt-1 text-xs text-slate-600">
+                Scegli un gioco per guadagnare nuove stelle.
+              </p>
+            )}
 
-            <div className="mt-5 divide-y divide-slate-200">
+            <div className={`divide-y divide-slate-200 ${limMode ? 'mt-2.5' : 'mt-5'}`}>
               {chartData.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0"
+                  className={`flex items-center justify-between gap-4 first:pt-0 last:pb-0 ${limMode ? 'py-2.5' : 'py-4'}`}
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -340,8 +356,8 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
                         {item.gameName}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-slate-600">{item.detail}</p>
-                    <p className="mt-1 font-mono text-xs font-semibold text-amber-700 tabular-nums">
+                    <p className="mt-0.5 text-xs text-slate-600">{item.detail}</p>
+                    <p className="mt-0.5 font-mono text-xs font-semibold text-amber-700 tabular-nums">
                       {item.stars} {item.stars === 1 ? 'stella guadagnata' : 'stelle guadagnate'}
                     </p>
                   </div>
@@ -352,7 +368,7 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
                       playClickPop(soundEnabled);
                       onNavigate(item.id);
                     }}
-                    className="min-h-[42px] rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer"
+                    className="min-h-[40px] rounded-lg border border-slate-300 bg-white px-4 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     Gioca
                   </button>
@@ -361,7 +377,7 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
             </div>
           </div>
 
-          <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div className={`shrink-0 rounded-xl border border-slate-200 bg-slate-50 ${limMode ? 'mt-3 p-3' : 'mt-6 p-4'}`}>
             <div className="flex items-center justify-between gap-3">
               <div>
                 <span className="block text-sm font-semibold text-slate-900">
@@ -377,7 +393,7 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
                   playClickPop(soundEnabled);
                   onNavigate('atlante');
                 }}
-                className="min-h-[42px] rounded-lg bg-[#0F5132] px-4 py-2 text-xs font-semibold text-white hover:bg-[#14532D] whitespace-nowrap shrink-0 cursor-pointer"
+                className="min-h-[40px] rounded-lg bg-[#0F5132] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[#14532D] whitespace-nowrap shrink-0 cursor-pointer"
               >
                 Esplora
               </button>
