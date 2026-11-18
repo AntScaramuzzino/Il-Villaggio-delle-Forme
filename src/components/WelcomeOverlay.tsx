@@ -91,6 +91,14 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({
                 className="h-full w-full object-cover object-top"
               />
             </div>
+            <div className="hidden sm:flex shrink-0 items-center justify-center rounded-xl bg-white p-1.5 shadow-sm">
+              <img
+                src="/assets/aistudio/Logo_Xmas_Lab_trasparente_080dc195.png"
+                alt="Logo Xmas Lab - La magIA continua"
+                draggable={false}
+                className={limMode ? 'h-12 w-auto object-contain' : 'h-11 w-auto sm:h-12 object-contain'}
+              />
+            </div>
             <div className="min-w-0">
               <span className="block text-[11px] font-semibold text-amber-200">
                 Guida rapida per la classe · {limMode ? 'Modalità LIM attiva' : 'Tablet, PC e LIM'}

@@ -263,25 +263,38 @@ export const SleighChallengeGame: React.FC<SleighChallengeGameProps> = ({
             }`}
           >
             <div>
-              <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-medium text-slate-600">
-                <span>Scuola Primaria</span>
-                <span aria-hidden="true">·</span>
-                <span>Classi 1ª–5ª</span>
-                <span aria-hidden="true">·</span>
-                <span className="tabular-nums">Record: {bestScore} pt</span>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-medium text-slate-600">
+                    <span>Scuola Primaria</span>
+                    <span aria-hidden="true">·</span>
+                    <span>Classi 1ª–5ª</span>
+                    <span aria-hidden="true">·</span>
+                    <span className="tabular-nums">Record: {bestScore} pt</span>
+                  </div>
+
+                  <h1
+                    className="mt-1 text-xl sm:text-2xl font-semibold tracking-tight text-slate-900"
+                    style={{ fontFamily: 'var(--font-display)' }}
+                  >
+                    Missione Natale: Il Villaggio delle Forme
+                  </h1>
+
+                  <p className="mt-1 max-w-2xl text-xs sm:text-[13px] leading-relaxed text-slate-700">
+                    Aiuta gli elfi del villaggio a preparare la slitta: ogni forma nasconde un oggetto
+                    di Natale come il panettone, il puntale o la pallina dell’albero!
+                  </p>
+                </div>
+
+                <div className="shrink-0 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xs">
+                  <img
+                    src="/assets/aistudio/Logo_Xmas_Lab_trasparente_080dc195.png"
+                    alt="Logo Xmas Lab - La magIA continua"
+                    draggable={false}
+                    className={limMode ? 'h-14 w-auto sm:h-16 object-contain' : 'h-14 w-auto sm:h-18 object-contain'}
+                  />
+                </div>
               </div>
-
-              <h1
-                className="mt-1 text-xl sm:text-2xl font-semibold tracking-tight text-slate-900"
-                style={{ fontFamily: 'var(--font-display)' }}
-              >
-                Missione Natale: Il Villaggio delle Forme
-              </h1>
-
-              <p className="mt-1 max-w-2xl text-xs sm:text-[13px] leading-relaxed text-slate-700">
-                Aiuta gli elfi del villaggio a preparare la slitta: ogni forma nasconde un oggetto
-                di Natale come il panettone, il puntale o la pallina dell’albero!
-              </p>
 
               {/* Level selector */}
               <div className={limMode ? 'mt-2.5' : 'mt-3'}>
