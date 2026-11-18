@@ -1,0 +1,8 @@
+{
+  "name": "Remix Remix Remix Bottega Geometrica",
+  "description": "Laboratorio di disegno geometrico di precisione, strumenti tecnici interattivi e simulatore di prospettiva rinascimentale con motore GeoGebra per la scuola secondaria e la storia dell\u0027arte.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
