@@ -8,8 +8,15 @@
 
 @layer base {
   html {
+    background-color: #f8fafc;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  html:fullscreen,
+  html:-webkit-full-screen {
+    background-color: #f8fafc;
+    overflow-y: auto;
   }
 
   body {
@@ -28,6 +35,30 @@
     touch-action: manipulation;
     -webkit-user-select: none;
     user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  [data-lim-mode="true"] button,
+  [data-lim-mode="true"] [role="button"],
+  [data-lim-mode="true"] svg,
+  [data-lim-mode="true"] [data-game-area="true"],
+  [data-lim-mode="true"] [data-touch-zone="interactive"] {
+    touch-action: none;
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  @media (min-width: 768px) {
+    html[data-lim-mode="true"],
+    html[data-lim-mode="true"] body {
+      touch-action: none;
+      overscroll-behavior: none;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
   }
 
   button:focus-visible,
@@ -41,7 +72,75 @@
   font-variant-numeric: tabular-nums;
 }
 
+@keyframes snowfall-drift {
+  0% {
+    transform: translate3d(0, -10vh, 0);
+  }
+  50% {
+    transform: translate3d(var(--snow-sway, 16px), 50vh, 0);
+  }
+  100% {
+    transform: translate3d(calc(var(--snow-sway, 16px) * -0.4), 108vh, 0);
+  }
+}
+
+.snowfall-overlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  overflow: hidden;
+  user-select: none;
+}
+
+.snowflake-particle {
+  position: absolute;
+  top: -12px;
+  left: var(--snow-x, 50%);
+  width: var(--snow-size, 6px);
+  height: var(--snow-size, 6px);
+  border-radius: 9999px;
+  opacity: var(--snow-opacity, 0.58);
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #e0f2fe 65%, rgba(186, 230, 253, 0.2) 100%);
+  box-shadow: 0 0 4px rgba(14, 116, 144, 0.2);
+  will-change: transform;
+  animation: snowfall-drift var(--snow-dur, 11s) linear var(--snow-delay, 0s) infinite;
+}
+
+.snowflake-particle:nth-child(1) { --snow-x: 4%; --snow-size: 5px; --snow-dur: 11s; --snow-delay: -2s; --snow-sway: 14px; --snow-opacity: 0.55; }
+.snowflake-particle:nth-child(2) { --snow-x: 9%; --snow-size: 7px; --snow-dur: 13s; --snow-delay: -7s; --snow-sway: -18px; --snow-opacity: 0.45; }
+.snowflake-particle:nth-child(3) { --snow-x: 13%; --snow-size: 4px; --snow-dur: 9.5s; --snow-delay: -4s; --snow-sway: 12px; --snow-opacity: 0.6; }
+.snowflake-particle:nth-child(4) { --snow-x: 17%; --snow-size: 6px; --snow-dur: 12s; --snow-delay: -9s; --snow-sway: -14px; --snow-opacity: 0.5; }
+.snowflake-particle:nth-child(5) { --snow-x: 21%; --snow-size: 8px; --snow-dur: 14.5s; --snow-delay: -1s; --snow-sway: 20px; --snow-opacity: 0.42; }
+.snowflake-particle:nth-child(6) { --snow-x: 26%; --snow-size: 5px; --snow-dur: 10.5s; --snow-delay: -6s; --snow-sway: -12px; --snow-opacity: 0.58; }
+.snowflake-particle:nth-child(7) { --snow-x: 30%; --snow-size: 6px; --snow-dur: 12.5s; --snow-delay: -3.5s; --snow-sway: 16px; --snow-opacity: 0.52; }
+.snowflake-particle:nth-child(8) { --snow-x: 34%; --snow-size: 4.5px; --snow-dur: 9.8s; --snow-delay: -8s; --snow-sway: -15px; --snow-opacity: 0.62; }
+.snowflake-particle:nth-child(9) { --snow-x: 38%; --snow-size: 7px; --snow-dur: 13.5s; --snow-delay: -5s; --snow-sway: 18px; --snow-opacity: 0.46; }
+.snowflake-particle:nth-child(10) { --snow-x: 42%; --snow-size: 5px; --snow-dur: 11.2s; --snow-delay: -10s; --snow-sway: -11px; --snow-opacity: 0.55; }
+.snowflake-particle:nth-child(11) { --snow-x: 46%; --snow-size: 6.5px; --snow-dur: 12.8s; --snow-delay: -1.5s; --snow-sway: 15px; --snow-opacity: 0.48; }
+.snowflake-particle:nth-child(12) { --snow-x: 50%; --snow-size: 4px; --snow-dur: 9.2s; --snow-delay: -6.5s; --snow-sway: -16px; --snow-opacity: 0.6; }
+.snowflake-particle:nth-child(13) { --snow-x: 54%; --snow-size: 7.5px; --snow-dur: 14s; --snow-delay: -3s; --snow-sway: 19px; --snow-opacity: 0.44; }
+.snowflake-particle:nth-child(14) { --snow-x: 58%; --snow-size: 5px; --snow-dur: 10.8s; --snow-delay: -8.5s; --snow-sway: -13px; --snow-opacity: 0.56; }
+.snowflake-particle:nth-child(15) { --snow-x: 62%; --snow-size: 6px; --snow-dur: 12.2s; --snow-delay: -4.5s; --snow-sway: 14px; --snow-opacity: 0.5; }
+.snowflake-particle:nth-child(16) { --snow-x: 66%; --snow-size: 4.5px; --snow-dur: 9.6s; --snow-delay: -11s; --snow-sway: -17px; --snow-opacity: 0.62; }
+.snowflake-particle:nth-child(17) { --snow-x: 70%; --snow-size: 7px; --snow-dur: 13.8s; --snow-delay: -2.2s; --snow-sway: 16px; --snow-opacity: 0.45; }
+.snowflake-particle:nth-child(18) { --snow-x: 74%; --snow-size: 5px; --snow-dur: 10.4s; --snow-delay: -7.5s; --snow-sway: -12px; --snow-opacity: 0.58; }
+.snowflake-particle:nth-child(19) { --snow-x: 78%; --snow-size: 8px; --snow-dur: 15s; --snow-delay: -5.5s; --snow-sway: 22px; --snow-opacity: 0.42; }
+.snowflake-particle:nth-child(20) { --snow-x: 82%; --snow-size: 5.5px; --snow-dur: 11.6s; --snow-delay: -9.5s; --snow-sway: -15px; --snow-opacity: 0.54; }
+.snowflake-particle:nth-child(21) { --snow-x: 86%; --snow-size: 4.5px; --snow-dur: 9.4s; --snow-delay: -3.2s; --snow-sway: 13px; --snow-opacity: 0.6; }
+.snowflake-particle:nth-child(22) { --snow-x: 90%; --snow-size: 6.5px; --snow-dur: 13.2s; --snow-delay: -6.8s; --snow-sway: -18px; --snow-opacity: 0.48; }
+.snowflake-particle:nth-child(23) { --snow-x: 94%; --snow-size: 5px; --snow-dur: 11s; --snow-delay: -1.8s; --snow-sway: 14px; --snow-opacity: 0.55; }
+.snowflake-particle:nth-child(24) { --snow-x: 97%; --snow-size: 6px; --snow-dur: 12.6s; --snow-delay: -10.5s; --snow-sway: -14px; --snow-opacity: 0.5; }
+.snowflake-particle:nth-child(25) { --snow-x: 15%; --snow-size: 5px; --snow-dur: 14.2s; --snow-delay: -12s; --snow-sway: 17px; --snow-opacity: 0.46; }
+.snowflake-particle:nth-child(26) { --snow-x: 48%; --snow-size: 5.5px; --snow-dur: 13.6s; --snow-delay: -12.5s; --snow-sway: -16px; --snow-opacity: 0.48; }
+.snowflake-particle:nth-child(27) { --snow-x: 68%; --snow-size: 4.5px; --snow-dur: 11.8s; --snow-delay: -13s; --snow-sway: 12px; --snow-opacity: 0.54; }
+.snowflake-particle:nth-child(28) { --snow-x: 88%; --snow-size: 6px; --snow-dur: 14.4s; --snow-delay: -11.5s; --snow-sway: -15px; --snow-opacity: 0.45; }
+
 @media (prefers-reduced-motion: reduce) {
+  .snowfall-overlay {
+    display: none;
+  }
+
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

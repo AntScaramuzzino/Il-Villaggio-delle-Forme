@@ -10,10 +10,11 @@ import {
   RotateCcw,
   RotateCw,
   Sparkles,
+  Square,
   Volume2
 } from 'lucide-react';
-import { playClickPop, playSuccessChime, playVictoryFanfare } from '../lib/soundFx';
-import { speakForKids } from '../lib/ttsVoice';
+import { AUDIO_DELAYS, playClickPop, playSuccessChime, playVictoryFanfare } from '../lib/soundFx';
+import { speakForKids, stopSpeaking, toggleSpeakForKids, useSpeakingState } from '../lib/ttsVoice';
 import { ResilientImage } from './ResilientImage';
 
 type TanKind = 'big-tri' | 'med-tri' | 'small-tri' | 'square' | 'parallelogram';
@@ -51,6 +52,7 @@ interface TangramModel {
   id: string;
   title: string;
   christmasObject: string;
+  christmasObjectArticle: string;
   subtitle: string;
   backgroundImage: string;
   backgroundAlt: string;
@@ -119,6 +121,7 @@ const TANGRAM_MODELS: TangramModel[] = [
     id: 'tangram-albero',
     title: 'Abete di Natale',
     christmasObject: 'Albero decorato con i 7 Tan',
+    christmasObjectArticle: 'l’albero decorato con i 7 Tan',
     subtitle: 'Trascina e ruota i 7 pezzi del Tangram per formare l’albero di Natale sulla neve.',
     backgroundImage: '/src/assets/images/bg_snowy_forest_clearing_1794994126896.jpg',
     backgroundAlt: 'Radura innevata tra gli abeti',
@@ -136,6 +139,7 @@ const TANGRAM_MODELS: TangramModel[] = [
     id: 'tangram-casetta',
     title: 'Baita di Natale',
     christmasObject: 'Baita Innevata con Veranda',
+    christmasObjectArticle: 'la baita innevata con veranda',
     subtitle: 'Unisci i due triangoli grandi per le pareti, il tetto, la veranda e la mansarda.',
     backgroundImage: '/src/assets/images/bg_christmas_hearth_1794994128347.jpg',
     backgroundAlt: 'Interno caldo natalizio',
@@ -153,6 +157,7 @@ const TANGRAM_MODELS: TangramModel[] = [
     id: 'tangram-candela',
     title: 'Candela di Natale',
     christmasObject: 'Candela Accesa delle Feste',
+    christmasObjectArticle: 'la candela accesa delle feste',
     subtitle: 'Componi il portacandela, il corpo di cera e la fiamma brillante in cima.',
     backgroundImage: '/src/assets/images/bg_christmas_hearth_1794994128347.jpg',
     backgroundAlt: 'Camino natalizio caldo',
@@ -170,6 +175,7 @@ const TANGRAM_MODELS: TangramModel[] = [
     id: 'tangram-angelo',
     title: 'Angelo di Natale',
     christmasObject: 'Angelo con Ali e Aureola',
+    christmasObjectArticle: 'l’angelo con ali e aureola',
     subtitle: 'Apri le grandi ali dell’angelo con i due triangoli grandi e posiziona l’aureola.',
     backgroundImage: '/src/assets/images/bg_starry_winter_sky_1794994127354.jpg',
     backgroundAlt: 'Cielo notturno di Natale',
@@ -187,6 +193,7 @@ const TANGRAM_MODELS: TangramModel[] = [
     id: 'tangram-cometa',
     title: 'Stella Cometa',
     christmasObject: 'Cometa nel Cielo Stellato',
+    christmasObjectArticle: 'la cometa nel cielo stellato',
     subtitle: 'Componi la punta della cometa e la lunga scia luminosa ruotando i pezzi.',
     backgroundImage: '/src/assets/images/bg_starry_winter_sky_1794994127354.jpg',
     backgroundAlt: 'Cielo stellato di Natale',
@@ -204,6 +211,7 @@ const TANGRAM_MODELS: TangramModel[] = [
     id: 'tangram-renna',
     title: 'Renna di Natale',
     christmasObject: 'Renna di Babbo Natale',
+    christmasObjectArticle: 'la renna di Babbo Natale',
     subtitle: 'Costruisci il corpo, le zampe, il collo alto e il muso della renna.',
     backgroundImage: '/src/assets/images/bg_snowy_forest_clearing_1794994126896.jpg',
     backgroundAlt: 'Bosco innevato di Natale',
@@ -221,6 +229,7 @@ const TANGRAM_MODELS: TangramModel[] = [
     id: 'tangram-slitta',
     title: 'Slitta dei Regali',
     christmasObject: 'Slitta Carica di Regali',
+    christmasObjectArticle: 'la slitta carica di regali',
     subtitle: 'Assembla i pattini della slitta, il grande carico di doni e la stella sulla cima.',
     backgroundImage: '/src/assets/images/bg_winter_railway_bridge_1794994127233.jpg',
     backgroundAlt: 'Paesaggio invernale con ponte nella neve',
@@ -238,6 +247,7 @@ const TANGRAM_MODELS: TangramModel[] = [
     id: 'tangram-libera',
     title: 'Fabbrica Libera',
     christmasObject: 'Creazione Personale di Natale',
+    christmasObjectArticle: 'la tua creazione personale di Natale',
     subtitle: 'Avvicina i 7 Tan nell’area centrale: si agganciano tra loro come calamite! Ruota di 45° per unirli.',
     backgroundImage: '/src/assets/images/christmas_workshop_banner_1794993393827.jpg',
     backgroundAlt: 'Tavolo della fabbrica di Natale',
@@ -463,6 +473,14 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
     [pieces, selectedPieceId]
   );
 
+  const isSpeaking = useSpeakingState();
+
+  useEffect(() => {
+    return () => {
+      stopSpeaking();
+    };
+  }, []);
+
   const toSvgCoords = (clientX: number, clientY: number): Pt => {
     const svg = svgRef.current;
     if (!svg) return { x: 240, y: 170 };
@@ -490,11 +508,12 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
         ? 'Fabbrica Libera con Calamita attiva! Avvicina due pezzi al centro per agganciarli tra loro.'
         : `Nuovo modello: ${chosen.title}! Trascina i pezzi e ruotali di 45° per incastrarli.`;
     setStatusMessage(msg);
-    speakForKids(msg, soundEnabled);
+    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick });
   };
 
   const resetBoard = () => {
     playClickPop(soundEnabled);
+    stopSpeaking();
     const fresh = makeInitialPieces();
     piecesRef.current = fresh;
     setPieces(fresh);
@@ -550,14 +569,14 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
     if (nextSnapped === model.targets.length) {
       playVictoryFanfare(soundEnabled);
       onCompleteFactoryModel(model.id);
-      const msg = `Meraviglioso! Hai costruito ${model.christmasObject}!`;
+      const msg = `Meraviglioso! Hai costruito ${model.christmasObjectArticle}!`;
       setStatusMessage(msg);
-      speakForKids(msg, soundEnabled);
+      speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterFanfare });
     } else {
       playSuccessChime(soundEnabled);
       const msg = `Perfetto! Hai incastrato ${piece.name} (${matchingTarget.name}).`;
       setStatusMessage(msg);
-      speakForKids(msg, soundEnabled);
+      speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterChime });
     }
 
     return updated;
@@ -766,15 +785,15 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
 
     const msg = `Aiuto: ${candidatePiece.name} va su "${nextSlot.name}"!`;
     setStatusMessage(msg);
-    speakForKids(msg, soundEnabled);
+    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterChime });
   };
 
   return (
-    <div className={limMode ? 'flex-1 min-h-0 flex flex-col gap-2.5 overflow-hidden' : 'space-y-5'}>
+    <div className={limMode ? 'flex-1 min-h-0 flex flex-col gap-2 overflow-hidden' : 'space-y-3'}>
       {/* Model Selector */}
       <div
-        className={`grid gap-1.5 rounded-xl bg-slate-200 p-1.5 ${
-          limMode ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8' : 'grid-cols-2 sm:grid-cols-4 gap-2'
+        className={`grid gap-1 rounded-xl bg-slate-200 p-1 ${
+          limMode ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8' : 'grid-cols-2 sm:grid-cols-4'
         }`}
       >
         {TANGRAM_MODELS.map((item, idx) => {
@@ -784,17 +803,17 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
               key={item.id}
               type="button"
               onClick={() => selectModel(idx)}
-              className={`rounded-lg text-left text-xs font-bold transition-colors cursor-pointer ${
-                limMode ? 'min-h-[38px] px-2.5 py-1.5' : 'min-h-[46px] px-3 py-2'
+              className={`rounded-lg text-left text-[11px] font-bold transition-colors cursor-pointer ${
+                limMode ? 'min-h-[30px] px-2 py-0.5' : 'min-h-[32px] px-2.5 py-1'
               } ${
                 active
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'bg-transparent text-slate-900 hover:bg-white/75'
               }`}
             >
-              <span className="block truncate text-xs">{item.title}</span>
+              <span className="block truncate">{item.title}</span>
               {!limMode && (
-                <span className="block truncate text-[11px] font-medium text-slate-600">
+                <span className="block truncate text-[10px] font-medium text-slate-600">
                   {item.targets.length === 0 ? 'Magneti tra pezzi' : '7 pezzi Tangram'}
                 </span>
               )}
@@ -805,24 +824,24 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
 
       {/* Interactive Tangram Factory Canvas + Controls */}
       <div
-        className={`grid grid-cols-1 md:grid-cols-12 md:items-stretch ${
-          limMode ? 'flex-1 min-h-0 gap-4' : 'gap-6'
+        className={`grid grid-cols-1 gap-3 md:grid-cols-12 md:items-stretch ${
+          limMode ? 'flex-1 min-h-0' : ''
         }`}
       >
         {/* Left: Interactive Drag & Snap SVG Board */}
         <div
-          className={`flex flex-col justify-between rounded-2xl bg-[#0F5132] text-white md:col-span-8 ${
-            limMode ? 'min-h-0 p-3.5' : 'p-5'
+          className={`flex flex-col justify-between rounded-xl bg-[#0F5132] text-white md:col-span-8 ${
+            limMode ? 'min-h-0 p-3' : 'p-3.5'
           }`}
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 className={`font-semibold text-white ${limMode ? 'text-base' : 'text-lg'}`}>
+              <h2 className="text-sm sm:text-base font-semibold text-white">
                 {model.title}
               </h2>
-              <p className="text-xs text-emerald-100">
+              <p className="text-[11px] text-emerald-100">
                 {isFreeMode
-                  ? 'Fabbrica Libera · Trascina al centro per agganciare i pezzi come calamite'
+                  ? 'Fabbrica Libera · Trascina al centro per agganciare i pezzi'
                   : `Pezzi incastrati: ${snappedCount}/${model.targets.length}`}
               </p>
             </div>
@@ -834,11 +853,9 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
                   playClickPop(soundEnabled);
                   setShowBackdrop((v) => !v);
                 }}
-                className={`inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 text-xs font-bold text-slate-900 hover:bg-slate-100 whitespace-nowrap shrink-0 cursor-pointer ${
-                  limMode ? 'min-h-[34px] py-1' : 'min-h-[40px] px-3 py-1.5'
-                }`}
+                className="inline-flex min-h-[28px] items-center gap-1 rounded-md bg-white px-2 py-0.5 text-[11px] font-bold text-slate-900 hover:bg-slate-100 whitespace-nowrap shrink-0 cursor-pointer"
               >
-                <ImageIcon className="h-3.5 w-3.5 text-[#0F5132]" aria-hidden="true" />
+                <ImageIcon className="h-3 w-3 text-[#0F5132]" aria-hidden="true" />
                 <span>{showBackdrop ? 'Sfondo: Scena' : 'Sfondo: Lavagna'}</span>
               </button>
 
@@ -850,16 +867,14 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
                     setMagnetEnabled((v) => !v);
                     setMagnetContact(null);
                   }}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer ${
-                    limMode ? 'min-h-[34px] py-1' : 'min-h-[40px] px-3 py-1.5'
-                  } ${
+                  className={`inline-flex min-h-[28px] items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold whitespace-nowrap shrink-0 cursor-pointer ${
                     magnetEnabled
                       ? 'bg-amber-400 text-slate-950 hover:bg-amber-300'
                       : 'bg-white text-slate-900 hover:bg-slate-100'
                   }`}
                 >
-                  <Magnet className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>{magnetEnabled ? 'Calamita: Attiva' : 'Calamita: Spenta'}</span>
+                  <Magnet className="h-3 w-3" aria-hidden="true" />
+                  <span>{magnetEnabled ? 'Calamita: Sì' : 'Calamita: No'}</span>
                 </button>
               ) : (
                 <>
@@ -869,28 +884,24 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
                       playClickPop(soundEnabled);
                       setShowGuides((v) => !v);
                     }}
-                    className={`inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 text-xs font-bold text-slate-900 hover:bg-slate-100 whitespace-nowrap shrink-0 cursor-pointer ${
-                      limMode ? 'min-h-[34px] py-1' : 'min-h-[40px] px-3 py-1.5'
-                    }`}
+                    className="inline-flex min-h-[28px] items-center gap-1 rounded-md bg-white px-2 py-0.5 text-[11px] font-bold text-slate-900 hover:bg-slate-100 whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     {showGuides ? (
-                      <Eye className="h-3.5 w-3.5 text-[#0F5132]" aria-hidden="true" />
+                      <Eye className="h-3 w-3 text-[#0F5132]" aria-hidden="true" />
                     ) : (
-                      <EyeOff className="h-3.5 w-3.5 text-slate-600" aria-hidden="true" />
+                      <EyeOff className="h-3 w-3 text-slate-600" aria-hidden="true" />
                     )}
-                    <span>{showGuides ? 'Guida: Attiva' : 'Guida: Ombra'}</span>
+                    <span>{showGuides ? 'Guida: Sì' : 'Guida: Ombra'}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={autoPlaceNextPiece}
                     disabled={isComplete}
-                    className={`inline-flex items-center gap-1.5 rounded-lg bg-amber-400 px-2.5 text-xs font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-45 ${
-                      limMode ? 'min-h-[34px] py-1' : 'min-h-[40px] px-3 py-1.5'
-                    }`}
+                    className="inline-flex min-h-[28px] items-center gap-1 rounded-md bg-amber-400 px-2 py-0.5 text-[11px] font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-45"
                   >
-                    <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>Posiziona Aiuto</span>
+                    <HelpCircle className="h-3 w-3" aria-hidden="true" />
+                    <span>Aiuto</span>
                   </button>
                 </>
               )}
@@ -898,11 +909,9 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
               <button
                 type="button"
                 onClick={resetBoard}
-                className={`inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 text-xs font-bold text-slate-900 hover:bg-slate-100 whitespace-nowrap shrink-0 cursor-pointer ${
-                  limMode ? 'min-h-[34px] py-1' : 'min-h-[40px] px-3 py-1.5'
-                }`}
+                className="inline-flex min-h-[28px] items-center gap-1 rounded-md bg-white px-2 py-0.5 text-[11px] font-bold text-slate-900 hover:bg-slate-100 whitespace-nowrap shrink-0 cursor-pointer"
               >
-                <RotateCcw className="h-3.5 w-3.5 text-red-600" aria-hidden="true" />
+                <RotateCcw className="h-3 w-3 text-red-600" aria-hidden="true" />
                 <span>Ricomincia</span>
               </button>
             </div>
@@ -911,7 +920,7 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
           {/* Interactive SVG Workspace */}
           <div
             className={`relative flex flex-1 min-h-0 items-center justify-center overflow-hidden rounded-xl border border-emerald-300/30 bg-[#083822] ${
-              limMode ? 'mt-2' : 'mt-4'
+              limMode ? 'mt-2' : 'mt-2.5'
             }`}
           >
             {showBackdrop && (
@@ -933,7 +942,7 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerUp}
               className={`relative z-10 touch-none select-none ${
-                limMode ? 'h-full w-full max-h-full' : 'h-auto w-full max-h-[390px]'
+                limMode ? 'h-full w-full max-h-full' : 'h-auto w-full max-h-[300px]'
               }`}
               role="img"
               aria-label={`Fabbrica Tangram: ${model.title}`}
@@ -1016,47 +1025,41 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
 
           {/* Direct On-Board Quick Rotation Bar (essential on tablet & LIM!) */}
           <div
-            className={`flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#083822] px-3.5 ${
-              limMode ? 'mt-2 py-1.5' : 'mt-3 py-2.5'
+            className={`flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#083822] px-2.5 ${
+              limMode ? 'mt-1.5 py-1' : 'mt-2 py-1.5'
             }`}
           >
-            <span className="text-xs font-semibold text-amber-200">
+            <span className="text-[11px] font-semibold text-amber-200">
               {selectedPiece
                 ? `${selectedPiece.name} (${selectedPiece.rotation}°) · Doppio tocco per ruotare`
                 : 'Seleziona un pezzo per ruotarlo'}
             </span>
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1">
               <button
                 type="button"
                 disabled={!selectedPiece}
                 onClick={() => rotateSelected(-45)}
-                className={`inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 text-xs font-bold text-slate-900 hover:bg-amber-100 whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-45 ${
-                  limMode ? 'min-h-[34px] py-1' : 'min-h-[40px] px-3 py-1.5'
-                }`}
+                className="inline-flex min-h-[28px] items-center gap-1 rounded-md bg-white px-2 py-0.5 text-[11px] font-bold text-slate-900 hover:bg-amber-100 whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-45"
               >
-                <RotateCcw className="h-3.5 w-3.5 text-[#0F5132]" aria-hidden="true" />
-                <span>Ruota -45°</span>
+                <RotateCcw className="h-3 w-3 text-[#0F5132]" aria-hidden="true" />
+                <span>-45°</span>
               </button>
               <button
                 type="button"
                 disabled={!selectedPiece}
                 onClick={() => rotateSelected(45)}
-                className={`inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 text-xs font-bold text-slate-900 hover:bg-amber-100 whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-45 ${
-                  limMode ? 'min-h-[34px] py-1' : 'min-h-[40px] px-3 py-1.5'
-                }`}
+                className="inline-flex min-h-[28px] items-center gap-1 rounded-md bg-white px-2 py-0.5 text-[11px] font-bold text-slate-900 hover:bg-amber-100 whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-45"
               >
-                <RotateCw className="h-3.5 w-3.5 text-[#0F5132]" aria-hidden="true" />
-                <span>Ruota +45°</span>
+                <RotateCw className="h-3 w-3 text-[#0F5132]" aria-hidden="true" />
+                <span>+45°</span>
               </button>
               {selectedPiece?.kind === 'parallelogram' && (
                 <button
                   type="button"
                   onClick={flipSelected}
-                  className={`inline-flex items-center gap-1.5 rounded-lg bg-amber-400 px-2.5 text-xs font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer ${
-                    limMode ? 'min-h-[34px] py-1' : 'min-h-[40px] px-3 py-1.5'
-                  }`}
+                  className="inline-flex min-h-[28px] items-center gap-1 rounded-md bg-amber-400 px-2 py-0.5 text-[11px] font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer"
                 >
-                  <FlipHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+                  <FlipHorizontal className="h-3 w-3" aria-hidden="true" />
                   <span>Capovolgi</span>
                 </button>
               )}
@@ -1065,88 +1068,86 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
 
           {/* Status & Voice Feedback */}
           <div
-            className={`flex flex-wrap items-center justify-between gap-2.5 rounded-xl bg-[#062B1A] px-3.5 text-white ${
-              limMode ? 'mt-2 py-2 text-xs sm:text-sm' : 'mt-3 px-4 py-3 text-sm'
+            className={`flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#062B1A] px-3 text-white ${
+              limMode ? 'mt-1.5 py-1.5 text-xs' : 'mt-2 py-1.5 text-xs sm:text-[13px]'
             }`}
           >
             <div className="flex items-center gap-2 min-w-0 flex-1">
               {isComplete ? (
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-amber-300" aria-hidden="true" />
               ) : (
-                <Sparkles className="h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />
+                <Sparkles className="h-3.5 w-3.5 shrink-0 text-amber-300" aria-hidden="true" />
               )}
               <span className={limMode ? 'line-clamp-1' : ''}>{statusMessage}</span>
             </div>
 
             <button
               type="button"
-              onClick={() => speakForKids(statusMessage, true)}
-              className={`inline-flex items-center gap-1.5 rounded-lg bg-amber-400 px-3 text-xs font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer ${
-                limMode ? 'min-h-[34px] py-1' : 'min-h-[38px] px-3.5 py-1.5'
-              }`}
+              onClick={() => toggleSpeakForKids(statusMessage)}
+              className="inline-flex min-h-[28px] items-center gap-1 rounded-md bg-amber-400 px-2.5 py-0.5 text-[11px] font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer"
             >
-              <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>Ascolta</span>
+              {isSpeaking ? (
+                <Square className="h-2.5 w-2.5 fill-slate-950" aria-hidden="true" />
+              ) : (
+                <Volume2 className="h-3 w-3" aria-hidden="true" />
+              )}
+              <span>{isSpeaking ? 'Ferma' : 'Ascolta'}</span>
             </button>
           </div>
         </div>
 
         {/* Right: Tactile Rotation & Piece Controls for Tablet / LIM */}
         <div
-          className={`flex flex-col justify-between rounded-2xl border border-slate-300 bg-white md:col-span-4 ${
-            limMode ? 'min-h-0 overflow-hidden p-3.5' : 'p-5'
+          className={`flex flex-col justify-between rounded-xl border border-slate-300 bg-white md:col-span-4 ${
+            limMode ? 'min-h-0 overflow-hidden p-3' : 'p-3.5'
           }`}
         >
           <div className={limMode ? 'flex flex-col flex-1 min-h-0 justify-between' : ''}>
             <div>
-              <h3 className={`font-semibold text-slate-900 ${limMode ? 'text-base' : 'text-lg'}`}>
-                Comandi Pezzo Selezionato
+              <h3 className="text-sm font-semibold text-slate-900">
+                Comandi Pezzo
               </h3>
               {!limMode && (
-                <p className="mt-1 text-xs text-slate-600">
-                  Tocca un pezzo sulla lavagna per selezionarlo, poi ruotalo di 45° o capovolgilo (anche con doppio tocco).
+                <p className="mt-0.5 text-[11px] text-slate-600">
+                  Tocca un pezzo per selezionarlo, poi ruotalo di 45° o capovolgilo.
                 </p>
               )}
 
               {selectedPiece ? (
                 <div
-                  className={`rounded-xl border border-slate-200 bg-slate-50 ${
-                    limMode ? 'mt-2 p-2.5' : 'mt-4 p-4'
+                  className={`rounded-lg border border-slate-200 bg-slate-50 ${
+                    limMode ? 'mt-1.5 p-2' : 'mt-2 p-2.5'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className={`font-bold text-slate-900 ${limMode ? 'text-sm' : 'text-base'}`}>
+                    <span className="text-xs font-bold text-slate-900">
                       {selectedPiece.name}
                     </span>
-                    <span className="font-mono text-xs font-semibold text-slate-700 tabular-nums">
+                    <span className="font-mono text-[11px] font-semibold text-slate-700 tabular-nums">
                       {selectedPiece.rotation}°
                     </span>
                   </div>
-                  <p className="mt-0.5 text-xs font-medium text-[#0F5132]">
-                    Elemento di Natale: {selectedPiece.christmasPart}
+                  <p className="mt-0.5 text-[11px] font-medium text-[#0F5132]">
+                    Elemento: {selectedPiece.christmasPart}
                   </p>
 
-                  <div className={`grid grid-cols-2 gap-2 ${limMode ? 'mt-2' : 'mt-4 gap-2.5'}`}>
+                  <div className="mt-2 grid grid-cols-2 gap-1.5">
                     <button
                       type="button"
                       onClick={() => rotateSelected(-45)}
-                      className={`inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-900 hover:bg-slate-100 cursor-pointer ${
-                        limMode ? 'min-h-[38px] py-1.5' : 'min-h-[48px] px-3 py-2'
-                      }`}
+                      className="inline-flex min-h-[30px] items-center justify-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-bold text-slate-900 hover:bg-slate-100 whitespace-nowrap shrink-0 cursor-pointer"
                     >
-                      <RotateCcw className="h-4 w-4 text-[#0F5132]" aria-hidden="true" />
-                      <span>Ruota -45°</span>
+                      <RotateCcw className="h-3 w-3 text-[#0F5132]" aria-hidden="true" />
+                      <span>-45°</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => rotateSelected(45)}
-                      className={`inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-900 hover:bg-slate-100 cursor-pointer ${
-                        limMode ? 'min-h-[38px] py-1.5' : 'min-h-[48px] px-3 py-2'
-                      }`}
+                      className="inline-flex min-h-[30px] items-center justify-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-bold text-slate-900 hover:bg-slate-100 whitespace-nowrap shrink-0 cursor-pointer"
                     >
-                      <RotateCw className="h-4 w-4 text-[#0F5132]" aria-hidden="true" />
-                      <span>Ruota +45°</span>
+                      <RotateCw className="h-3 w-3 text-[#0F5132]" aria-hidden="true" />
+                      <span>+45°</span>
                     </button>
                   </div>
 
@@ -1154,28 +1155,26 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
                     <button
                       type="button"
                       onClick={flipSelected}
-                      className={`mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 text-xs font-bold text-slate-900 hover:bg-slate-100 cursor-pointer ${
-                        limMode ? 'min-h-[36px] py-1.5' : 'min-h-[46px] py-2'
-                      }`}
+                      className="mt-1.5 inline-flex min-h-[30px] w-full items-center justify-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-900 hover:bg-slate-100 whitespace-nowrap shrink-0 cursor-pointer"
                     >
-                      <FlipHorizontal className="h-4 w-4 text-amber-700" aria-hidden="true" />
-                      <span>Capovolgi Parallelogramma</span>
+                      <FlipHorizontal className="h-3 w-3 text-amber-700" aria-hidden="true" />
+                      <span>Capovolgi</span>
                     </button>
                   )}
                 </div>
               ) : (
-                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-[11px] text-slate-600">
                   Nessun pezzo selezionato: tocca uno dei 7 pezzi colorati.
                 </div>
               )}
             </div>
 
             {/* Quick List of 7 Tans */}
-            <div className={limMode ? 'mt-2' : 'mt-4'}>
-              <span className="block text-xs font-semibold text-slate-700">
+            <div className={limMode ? 'mt-1.5' : 'mt-2.5'}>
+              <span className="block text-[11px] font-semibold text-slate-700">
                 I 7 pezzi del Tangram
               </span>
-              <div className={`mt-1.5 grid gap-1.5 ${limMode ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              <div className={`mt-1 grid gap-1 ${limMode ? 'grid-cols-2' : 'grid-cols-1'}`}>
                 {pieces.map((p) => {
                   const active = p.id === selectedPieceId;
                   return (
@@ -1186,8 +1185,8 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
                         playClickPop(soundEnabled);
                         setSelectedPieceId(p.id);
                       }}
-                      className={`flex items-center justify-between gap-1.5 rounded-lg border text-left font-semibold transition-colors cursor-pointer ${
-                        limMode ? 'min-h-[34px] px-2 py-1 text-[11px]' : 'min-h-[38px] px-3 py-1.5 text-xs'
+                      className={`flex items-center justify-between gap-1.5 rounded-md border text-left font-semibold transition-colors cursor-pointer ${
+                        limMode ? 'min-h-[28px] px-2 py-0.5 text-[10px]' : 'min-h-[30px] px-2.5 py-0.5 text-[11px]'
                       } ${
                         active
                           ? 'border-[#0F5132] bg-emerald-50 text-slate-900'
@@ -1196,7 +1195,7 @@ export const TangramFactory: React.FC<TangramFactoryProps> = ({
                     >
                       <span className="flex items-center gap-1.5 min-w-0">
                         <span
-                          className="inline-block h-2.5 w-2.5 rounded-xs shrink-0"
+                          className="inline-block h-2 w-2 rounded-xs shrink-0"
                           style={{ backgroundColor: p.color }}
                           aria-hidden="true"
                         />

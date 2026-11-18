@@ -9,10 +9,13 @@ import {
   XAxis,
   YAxis
 } from 'recharts';
-import { ArrowRight, RotateCcw, Star } from 'lucide-react';
+import { ArrowRight, FileDown, RotateCcw, Star } from 'lucide-react';
 import { CHRISTMAS_SHAPES, RIDDLES_BANK, TANGRAM_PUZZLES } from '../data/christmasShapes';
-import { playClickPop } from '../lib/soundFx';
+import { generateElfCertificatePdf } from '../lib/certificatePdf';
+import { playClickPop, playSuccessChime } from '../lib/soundFx';
+import { speakForKids } from '../lib/ttsVoice';
 import { GameSection, WorkshopStats } from '../types/christmasGeometry';
+import { ChristmasMedals } from './ChristmasMedals';
 import { ResilientImage } from './ResilientImage';
 
 interface ProgressDashboardProps {
@@ -39,11 +42,28 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
   limMode = false
 }) => {
   const [confirmReset, setConfirmReset] = useState(false);
+  const [studentName, setStudentName] = useState('');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  const handleDownloadCertificate = async () => {
+    if (isGeneratingPdf) return;
+    setIsGeneratingPdf(true);
+    try {
+      await generateElfCertificatePdf({ studentName, stats });
+      playSuccessChime(soundEnabled);
+      speakForKids(
+        `Certificato dell'Elfo Geometra scaricato con ${stats.totalStars} stelle!`,
+        soundEnabled
+      );
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
 
   const puzzleStars = stats.completedPuzzles.length * 2;
   const riddleStars = stats.solvedRiddles.length;
   const sleighStars = stats.sleighStars;
-  const containerMax = limMode ? 'max-w-[1600px]' : 'max-w-[1200px]';
+  const containerMax = limMode ? 'max-w-[1600px]' : 'max-w-[1160px]';
 
   const chartData: GameChartDatum[] = useMemo(
     () => [
@@ -85,12 +105,12 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
 
   return (
     <section
-      className={`mx-auto ${containerMax} px-4 sm:px-6 ${
-        limMode ? 'flex flex-col py-3 md:h-full md:overflow-hidden gap-3' : 'py-5'
+      className={`mx-auto ${containerMax} px-3 sm:px-5 ${
+        limMode ? 'flex flex-col py-2 md:h-full md:overflow-hidden gap-2' : 'py-3 space-y-3'
       }`}
     >
       {/* Illustrated Workshop Banner Header */}
-      <div className={`relative shrink-0 overflow-hidden rounded-2xl bg-[#0F5132] text-white ${limMode ? 'px-5 py-3.5' : 'p-6'}`}>
+      <div className={`relative shrink-0 overflow-hidden rounded-xl bg-[#0F5132] text-white ${limMode ? 'px-3.5 py-2.5' : 'px-4 py-3'}`}>
         <ResilientImage
           src="/src/assets/images/christmas_workshop_banner_1794993393827.jpg"
           alt="Officina natalizia del Villaggio delle Forme"
@@ -99,22 +119,42 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0F5132]/92 via-[#0F5132]/82 to-[#0F5132]/65" aria-hidden="true" />
 
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-2.5">
           <div>
             <h1
-              className={`font-semibold text-white ${limMode ? 'text-2xl sm:text-3xl' : 'text-2xl sm:text-3xl'}`}
+              className="text-xl sm:text-2xl font-semibold text-white"
               style={{ fontFamily: 'var(--font-display)' }}
             >
-              Dashboard dei Progressi della Classe
+              Dashboard dei Progressi
             </h1>
             {!limMode && (
-              <p className="mt-1 text-sm text-emerald-100">
-                Controlla quante stelle hai raccolto in ciascun gioco del Villaggio delle Forme.
+              <p className="mt-0.5 text-xs text-emerald-100">
+                Controlla le stelle raccolte nei giochi del Villaggio delle Forme.
               </p>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              value={studentName}
+              onChange={(e) => setStudentName(e.target.value)}
+              placeholder="Nome o classe (opz.)"
+              maxLength={40}
+              aria-label="Nome alunno o classe per il certificato PDF"
+              className="h-[30px] w-36 sm:w-44 rounded-lg border border-white/40 bg-white/95 px-2.5 text-[11px] font-medium text-slate-900 placeholder:text-slate-500 focus:outline-2 focus:outline-amber-300"
+            />
+
+            <button
+              type="button"
+              onClick={handleDownloadCertificate}
+              disabled={isGeneratingPdf}
+              className="inline-flex min-h-[30px] items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-1 text-[11px] font-bold text-slate-950 hover:bg-amber-300 transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-60"
+            >
+              <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>{isGeneratingPdf ? 'Creo PDF...' : 'Certificato PDF'}</span>
+            </button>
+
             {!confirmReset ? (
               <button
                 type="button"
@@ -122,14 +162,14 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
                   playClickPop(soundEnabled);
                   setConfirmReset(true);
                 }}
-                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-white bg-white px-3.5 py-1.5 text-xs font-bold text-slate-900 hover:bg-amber-50 whitespace-nowrap shrink-0 cursor-pointer"
+                className="inline-flex min-h-[30px] items-center gap-1.5 rounded-lg border border-white bg-white px-2.5 py-1 text-[11px] font-bold text-slate-900 hover:bg-amber-50 whitespace-nowrap shrink-0 cursor-pointer"
               >
-                <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>Azzera Progressi</span>
+                <RotateCcw className="h-3 w-3" aria-hidden="true" />
+                <span>Azzera</span>
               </button>
             ) : (
-              <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-1.5">
-                <span className="text-xs font-semibold text-red-900">Confermi azzeramento?</span>
+              <div className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2 py-0.5">
+                <span className="text-[11px] font-semibold text-red-900">Azzerare?</span>
                 <button
                   type="button"
                   onClick={() => {
@@ -137,16 +177,16 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
                     onResetStats();
                     setConfirmReset(false);
                   }}
-                  className="min-h-[34px] rounded-lg bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700 whitespace-nowrap shrink-0 cursor-pointer"
+                  className="min-h-[26px] rounded-md bg-red-600 px-2 py-0.5 text-[11px] font-bold text-white hover:bg-red-700 whitespace-nowrap shrink-0 cursor-pointer"
                 >
-                  Sì, azzera
+                  Sì
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirmReset(false)}
-                  className="min-h-[34px] rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer"
+                  className="min-h-[26px] rounded-md border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer"
                 >
-                  Annulla
+                  No
                 </button>
               </div>
             )}
@@ -155,58 +195,58 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
       </div>
 
       {/* KPI Strip */}
-      <div className={`grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 ${limMode ? '' : 'mt-5 gap-4'}`}>
-        <div className={`rounded-xl border border-slate-300 bg-white ${limMode ? 'p-3.5' : 'p-5'}`}>
-          <span className="text-xs font-medium text-slate-600">Stelle Totali</span>
-          <div className="mt-1 flex items-center gap-2">
-            <Star className="h-5 w-5 fill-amber-400 text-amber-500" aria-hidden="true" />
-            <span className="font-mono text-2xl font-semibold text-slate-900 tabular-nums">
+      <div className="grid shrink-0 grid-cols-2 gap-2.5 lg:grid-cols-4">
+        <div className="rounded-xl border border-slate-300 bg-white p-3">
+          <span className="text-[11px] font-medium text-slate-600">Stelle Totali</span>
+          <div className="mt-0.5 flex items-center gap-1.5">
+            <Star className="h-4 w-4 fill-amber-400 text-amber-500" aria-hidden="true" />
+            <span className="font-mono text-xl font-semibold text-slate-900 tabular-nums">
               {stats.totalStars}
             </span>
           </div>
           {!limMode && (
-            <span className="mt-1 block text-xs text-slate-500">
+            <span className="mt-0.5 block text-[11px] text-slate-500">
               Somma di tutti i giochi
             </span>
           )}
         </div>
 
-        <div className={`rounded-xl border border-slate-300 bg-white ${limMode ? 'p-3.5' : 'p-5'}`}>
-          <span className="text-xs font-medium text-slate-600">Record Sfida Slitta</span>
-          <span className="mt-1 block font-mono text-2xl font-semibold text-slate-900 tabular-nums">
+        <div className="rounded-xl border border-slate-300 bg-white p-3">
+          <span className="text-[11px] font-medium text-slate-600">Record Sfida Slitta</span>
+          <span className="mt-0.5 block font-mono text-xl font-semibold text-slate-900 tabular-nums">
             {stats.bestSleighScore} pt
           </span>
-          <span className="mt-0.5 block text-xs text-slate-500 tabular-nums">
+          <span className="mt-0.5 block text-[11px] text-slate-500 tabular-nums">
             {stats.sleighRoundsCompleted} viaggi completati
           </span>
         </div>
 
-        <div className={`rounded-xl border border-slate-300 bg-white ${limMode ? 'p-3.5' : 'p-5'}`}>
-          <span className="text-xs font-medium text-slate-600">Costruzioni Albero Magico</span>
-          <span className="mt-1 block font-mono text-2xl font-semibold text-[#0F5132] tabular-nums">
+        <div className="rounded-xl border border-slate-300 bg-white p-3">
+          <span className="text-[11px] font-medium text-slate-600">Albero & Tangram</span>
+          <span className="mt-0.5 block font-mono text-xl font-semibold text-[#0F5132] tabular-nums">
             {stats.completedPuzzles.length}/{TANGRAM_PUZZLES.length}
           </span>
-          <span className="mt-0.5 block text-xs text-slate-500 tabular-nums">
-            {puzzleStars} stelle vinte (2 per scena)
+          <span className="mt-0.5 block text-[11px] text-slate-500 tabular-nums">
+            {puzzleStars} stelle vinte
           </span>
         </div>
 
-        <div className={`rounded-xl border border-slate-300 bg-white ${limMode ? 'p-3.5' : 'p-5'}`}>
-          <span className="text-xs font-medium text-slate-600">Indovinelli e Atlante</span>
-          <span className="mt-1 block font-mono text-2xl font-semibold text-slate-900 tabular-nums">
+        <div className="rounded-xl border border-slate-300 bg-white p-3">
+          <span className="text-[11px] font-medium text-slate-600">Indovinelli & Atlante</span>
+          <span className="mt-0.5 block font-mono text-xl font-semibold text-slate-900 tabular-nums">
             {stats.solvedRiddles.length}/{RIDDLES_BANK.length}
           </span>
-          <span className="mt-0.5 block text-xs text-slate-500 tabular-nums">
+          <span className="mt-0.5 block text-[11px] text-slate-500 tabular-nums">
             {stats.exploredShapes.length}/{CHRISTMAS_SHAPES.length} forme esplorate
           </span>
         </div>
       </div>
 
-      {/* Empty State Banner when no stars earned yet */}
-      {!hasAnyStars && (
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-300 bg-white p-5">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+      {/* Empty State Banner when no stars earned yet (compactly replaced by medal progress in LIM mode) */}
+      {!hasAnyStars && !limMode && (
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
               <ResilientImage
                 src="/src/assets/images/elf_craftsman_avatar_1794993394306.jpg"
                 alt="Elfo Pino"
@@ -215,12 +255,11 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
               />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-slate-900">
+              <h2 className="text-xs sm:text-sm font-semibold text-slate-900">
                 Nessuna stella ancora guadagnata
               </h2>
-              <p className="mt-0.5 text-sm text-slate-600">
-                Completa una partita su Sfida Slitta, assembla una scena in Albero Magico o risolvi
-                un Indovinello per vedere crescere le colonne del grafico!
+              <p className="text-[11px] text-slate-600">
+                Completa una partita su Sfida Slitta, Albero Magico o Indovinelli per riempire il grafico e sbloccare le medaglie.
               </p>
             </div>
           </div>
@@ -231,39 +270,41 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
               playClickPop(soundEnabled);
               onNavigate('slitta');
             }}
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-red-600 px-5 py-2 text-sm font-semibold text-white hover:bg-red-700 whitespace-nowrap shrink-0 cursor-pointer"
+            className="inline-flex min-h-[32px] items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1 text-xs font-bold text-white hover:bg-red-700 whitespace-nowrap shrink-0 cursor-pointer"
           >
-            <span>Inizia a Giocare</span>
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            <span>Gioca ora</span>
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
         </div>
       )}
 
+      {/* Christmas Medals & Badges unlocked by Total Stars */}
+      <ChristmasMedals
+        totalStars={stats.totalStars}
+        soundEnabled={soundEnabled}
+        limMode={limMode}
+      />
+
       {/* Main Chart + Per-Game Summary Grid */}
       <div
-        className={`grid grid-cols-1 md:grid-cols-12 md:items-stretch ${
-          limMode ? 'flex-1 min-h-0 gap-4' : 'mt-5 gap-6'
+        className={`grid grid-cols-1 gap-3 md:grid-cols-12 md:items-stretch ${
+          limMode ? 'flex-1 min-h-0' : ''
         }`}
       >
         {/* Left: Recharts Bar Chart */}
-        <div className={`flex flex-col justify-between rounded-2xl border border-slate-300 bg-white md:col-span-7 ${limMode ? 'p-4 min-h-0' : 'p-6'}`}>
+        <div className={`flex flex-col justify-between rounded-xl border border-slate-300 bg-white md:col-span-7 ${limMode ? 'p-3 min-h-0' : 'p-3.5 sm:p-4'}`}>
           <div className="shrink-0">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className={`font-semibold text-slate-900 ${limMode ? 'text-lg' : 'text-lg'}`}>
-                Stelle guadagnate in ogni gioco
+              <h2 className="text-sm sm:text-base font-semibold text-slate-900">
+                Stelle guadagnate per gioco
               </h2>
-              <span className="font-mono text-xs font-semibold text-slate-600 tabular-nums">
+              <span className="font-mono text-[11px] font-semibold text-slate-600 tabular-nums">
                 Totale: {stats.totalStars} stelle
               </span>
             </div>
-            {!limMode && (
-              <p className="mt-1 text-xs text-slate-500">
-                Confronto tra Sfida Slitta, Tangram & Scene e Indovinelli Geometrici.
-              </p>
-            )}
           </div>
 
-          <div className={`w-full ${limMode ? 'mt-2 flex-1 min-h-[180px]' : 'mt-5 h-[290px]'}`}>
+          <div className={`w-full ${limMode ? 'mt-2 flex-1 min-h-[130px]' : 'mt-3 h-[210px]'}`}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}
@@ -310,11 +351,11 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
           </div>
 
           {/* Legend */}
-          <div className="mt-4 flex flex-wrap items-center gap-5 border-t border-slate-200 pt-4 text-xs text-slate-700">
+          <div className="mt-2.5 flex flex-wrap items-center gap-3.5 border-t border-slate-200 pt-2.5 text-[11px] text-slate-700">
             {chartData.map((item) => (
-              <div key={item.id} className="flex items-center gap-2">
+              <div key={item.id} className="flex items-center gap-1.5">
                 <span
-                  className="inline-block h-3 w-3 rounded-xs"
+                  className="inline-block h-2 w-2 rounded-xs"
                   style={{ backgroundColor: item.color }}
                   aria-hidden="true"
                 />
@@ -328,37 +369,32 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
         </div>
 
         {/* Right: Detailed Per-Game Progress List */}
-        <div className={`flex flex-col justify-between rounded-2xl border border-slate-300 bg-white md:col-span-5 ${limMode ? 'p-4 min-h-0' : 'p-6'}`}>
+        <div className={`flex flex-col justify-between rounded-xl border border-slate-300 bg-white md:col-span-5 ${limMode ? 'p-3 min-h-0' : 'p-3.5 sm:p-4'}`}>
           <div>
-            <h2 className={`font-semibold text-slate-900 ${limMode ? 'text-lg' : 'text-lg'}`}>
+            <h2 className="text-sm sm:text-base font-semibold text-slate-900">
               Dettaglio Attività
             </h2>
-            {!limMode && (
-              <p className="mt-1 text-xs text-slate-600">
-                Scegli un gioco per guadagnare nuove stelle.
-              </p>
-            )}
 
-            <div className={`divide-y divide-slate-200 ${limMode ? 'mt-2.5' : 'mt-5'}`}>
+            <div className="mt-2 divide-y divide-slate-200">
               {chartData.map((item) => (
                 <div
                   key={item.id}
-                  className={`flex items-center justify-between gap-4 first:pt-0 last:pb-0 ${limMode ? 'py-2.5' : 'py-4'}`}
+                  className={`flex items-center justify-between gap-2.5 first:pt-0 last:pb-0 ${limMode ? 'py-1.5' : 'py-2.5'}`}
                 >
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <span
-                        className="inline-block h-2.5 w-2.5 shrink-0 rounded-xs"
+                        className="inline-block h-2 w-2 shrink-0 rounded-xs"
                         style={{ backgroundColor: item.color }}
                         aria-hidden="true"
                       />
-                      <span className="text-sm font-semibold text-slate-900">
+                      <span className="text-xs sm:text-[13px] font-semibold text-slate-900">
                         {item.gameName}
                       </span>
                     </div>
-                    <p className="mt-0.5 text-xs text-slate-600">{item.detail}</p>
-                    <p className="mt-0.5 font-mono text-xs font-semibold text-amber-700 tabular-nums">
-                      {item.stars} {item.stars === 1 ? 'stella guadagnata' : 'stelle guadagnate'}
+                    <p className="mt-0.5 text-[11px] text-slate-600 truncate">{item.detail}</p>
+                    <p className="mt-0.5 font-mono text-[11px] font-semibold text-amber-700 tabular-nums">
+                      {item.stars} {item.stars === 1 ? 'stella' : 'stelle'}
                     </p>
                   </div>
 
@@ -368,7 +404,7 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
                       playClickPop(soundEnabled);
                       onNavigate(item.id);
                     }}
-                    className="min-h-[40px] rounded-lg border border-slate-300 bg-white px-4 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer"
+                    className="min-h-[30px] rounded-lg border border-slate-300 bg-white px-3 py-1 text-[11px] font-bold text-slate-800 hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     Gioca
                   </button>
@@ -377,14 +413,14 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
             </div>
           </div>
 
-          <div className={`shrink-0 rounded-xl border border-slate-200 bg-slate-50 ${limMode ? 'mt-3 p-3' : 'mt-6 p-4'}`}>
-            <div className="flex items-center justify-between gap-3">
+          <div className="mt-2.5 shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+            <div className="flex items-center justify-between gap-2.5">
               <div>
-                <span className="block text-sm font-semibold text-slate-900">
+                <span className="block text-xs sm:text-[13px] font-semibold text-slate-900">
                   Atlante delle Forme
                 </span>
-                <span className="mt-0.5 block text-xs text-slate-600 tabular-nums">
-                  Forme studiate: {stats.exploredShapes.length} su {CHRISTMAS_SHAPES.length}
+                <span className="mt-0.5 block text-[11px] text-slate-600 tabular-nums">
+                  Studiate: {stats.exploredShapes.length}/{CHRISTMAS_SHAPES.length}
                 </span>
               </div>
               <button
@@ -393,7 +429,7 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({
                   playClickPop(soundEnabled);
                   onNavigate('atlante');
                 }}
-                className="min-h-[40px] rounded-lg bg-[#0F5132] px-4 py-1.5 text-xs font-semibold text-white hover:bg-[#14532D] whitespace-nowrap shrink-0 cursor-pointer"
+                className="min-h-[30px] rounded-lg bg-[#0F5132] px-3 py-1 text-[11px] font-bold text-white hover:bg-[#14532D] whitespace-nowrap shrink-0 cursor-pointer"
               >
                 Esplora
               </button>

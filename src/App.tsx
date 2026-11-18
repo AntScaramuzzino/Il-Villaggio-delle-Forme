@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { BarChart3, BookOpen, Gift, HelpCircle, Maximize2, Minimize2, Monitor, Trees, Volume2, VolumeX } from 'lucide-react';
+import { Award, BarChart3, BookOpen, Gift, HelpCircle, Maximize2, Minimize2, Monitor, Snowflake, Trees, Volume2, VolumeX, Wand2 } from 'lucide-react';
+import { CanvasGuidePage } from './components/CanvasGuidePage';
+import { CreditsPage } from './components/CreditsPage';
 import { ProgressDashboard } from './components/ProgressDashboard';
 import { RiddlesQuiz } from './components/RiddlesQuiz';
 import { ShapesAtlas } from './components/ShapesAtlas';
 import { SleighChallengeGame } from './components/SleighChallengeGame';
+import { SnowfallOverlay } from './components/SnowfallOverlay';
 import { TreeBuilderGame } from './components/TreeBuilderGame';
+import { WelcomeOverlay } from './components/WelcomeOverlay';
 import { RIDDLES_BANK, TANGRAM_PUZZLES } from './data/christmasShapes';
 import { playClickPop } from './lib/soundFx';
 import { stopSpeaking } from './lib/ttsVoice';
@@ -20,10 +24,31 @@ const NAV_ITEMS: Array<{
   { id: 'albero', label: 'Tangram', shortLabel: 'Tangram', icon: Trees },
   { id: 'indovinelli', label: 'Indovinelli', shortLabel: 'Quiz', icon: HelpCircle },
   { id: 'atlante', label: 'Atlante', shortLabel: 'Atlante', icon: BookOpen },
-  { id: 'dashboard', label: 'Dashboard', shortLabel: 'Progressi', icon: BarChart3 }
+  { id: 'dashboard', label: 'Dashboard', shortLabel: 'Stelle', icon: BarChart3 },
+  { id: 'istruzioni', label: 'Istruzioni', shortLabel: 'Canvas', icon: Wand2 },
+  { id: 'credits', label: 'Credits', shortLabel: 'Credits', icon: Award }
 ];
 
 const STORAGE_KEY = 'bottega-natale-geometria-stats-v1';
+const WELCOME_STORAGE_KEY = 'bottega-natale-welcome-seen-v1';
+const SNOW_STORAGE_KEY = 'bottega-natale-snow-enabled-v1';
+
+function hasSeenWelcome(): boolean {
+  try {
+    return localStorage.getItem(WELCOME_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function loadSnowEnabled(): boolean {
+  try {
+    const saved = localStorage.getItem(SNOW_STORAGE_KEY);
+    return saved === null ? true : saved === '1';
+  } catch {
+    return true;
+  }
+}
 
 const DEFAULT_STATS: WorkshopStats = {
   totalStars: 0,
@@ -68,11 +93,38 @@ function loadInitialStats(): WorkshopStats {
 export default function App() {
   const [section, setSection] = useState<GameSection>('slitta');
   const [level, setLevel] = useState<SchoolLevel>('base');
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [snowEnabled, setSnowEnabled] = useState<boolean>(loadSnowEnabled);
   const [limMode, setLimMode] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [nativeFullscreen, setNativeFullscreen] = useState(false);
+  const [fallbackFullscreen, setFallbackFullscreen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState<boolean>(() => !hasSeenWelcome());
   const [resetSignal, setResetSignal] = useState(0);
   const [stats, setStats] = useState<WorkshopStats>(loadInitialStats);
+
+  const handleToggleSnow = () => {
+    playClickPop(soundEnabled);
+    setSnowEnabled((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(SNOW_STORAGE_KEY, next ? '1' : '0');
+      } catch {
+        // Ignore storage write errors
+      }
+      return next;
+    });
+  };
+
+  const handleCloseWelcome = () => {
+    setShowWelcome(false);
+    try {
+      localStorage.setItem(WELCOME_STORAGE_KEY, '1');
+    } catch {
+      // Ignore storage write errors
+    }
+  };
+
+  const isFullscreen = nativeFullscreen || fallbackFullscreen;
 
   useEffect(() => {
     try {
@@ -83,25 +135,135 @@ export default function App() {
   }, [stats]);
 
   useEffect(() => {
+    const getFullscreenElement = () => {
+      const doc = document as Document & { webkitFullscreenElement?: Element | null };
+      return document.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
+    };
     const handleFsChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
+      const active = Boolean(getFullscreenElement());
+      setNativeFullscreen(active);
+      if (!active) {
+        setFallbackFullscreen(false);
+      }
     };
     document.addEventListener('fullscreenchange', handleFsChange);
-    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!fallbackFullscreen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setFallbackFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [fallbackFullscreen]);
+
+  // Robust touch & pointer gesture guard in LIM mode to prevent mobile OS conflicts
+  // (pinch-zoom, pull-to-refresh, edge swipe/overscroll, long-press context menu)
+  useEffect(() => {
+    const rootEl = document.documentElement;
+    if (limMode) {
+      rootEl.setAttribute('data-lim-mode', 'true');
+    } else {
+      rootEl.removeAttribute('data-lim-mode');
+      return;
+    }
+
+    const preventMultiTouchZoom = (event: TouchEvent) => {
+      if (event.touches.length > 1) {
+        event.preventDefault();
+      }
+    };
+
+    const preventGestureZoom = (event: Event) => {
+      event.preventDefault();
+    };
+
+    const preventInteractiveContextMenu = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (
+        target.closest(
+          'button, [role="button"], svg, [data-game-area="true"], [data-touch-zone="interactive"]'
+        )
+      ) {
+        event.preventDefault();
+      }
+    };
+
+    document.addEventListener('touchstart', preventMultiTouchZoom, { passive: false });
+    document.addEventListener('touchmove', preventMultiTouchZoom, { passive: false });
+    document.addEventListener('gesturestart', preventGestureZoom, { passive: false });
+    document.addEventListener('gesturechange', preventGestureZoom, { passive: false });
+    document.addEventListener('contextmenu', preventInteractiveContextMenu);
+
+    return () => {
+      rootEl.removeAttribute('data-lim-mode');
+      document.removeEventListener('touchstart', preventMultiTouchZoom);
+      document.removeEventListener('touchmove', preventMultiTouchZoom);
+      document.removeEventListener('gesturestart', preventGestureZoom);
+      document.removeEventListener('gesturechange', preventGestureZoom);
+      document.removeEventListener('contextmenu', preventInteractiveContextMenu);
+    };
+  }, [limMode]);
 
   const toggleFullscreen = async () => {
     playClickPop(soundEnabled);
-    try {
-      if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen();
-      } else {
-        await document.exitFullscreen();
+    const doc = document as Document & {
+      webkitFullscreenElement?: Element | null;
+      webkitExitFullscreen?: () => Promise<void> | void;
+      webkitFullscreenEnabled?: boolean;
+    };
+    const root = document.documentElement as HTMLElement & {
+      webkitRequestFullscreen?: () => Promise<void> | void;
+    };
+    const currentFsEl = document.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
+
+    if (currentFsEl) {
+      try {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if (doc.webkitExitFullscreen) {
+          await doc.webkitExitFullscreen();
+        }
+      } catch {
+        setNativeFullscreen(false);
       }
-    } catch {
-      // Fallback: if fullscreen is blocked in sandboxed iframe, enable LIM projection mode
-      setLimMode((prev) => !prev);
+      setFallbackFullscreen(false);
+      return;
     }
+
+    if (fallbackFullscreen) {
+      setFallbackFullscreen(false);
+      return;
+    }
+
+    const canNativeFs = Boolean(
+      (document.fullscreenEnabled ?? doc.webkitFullscreenEnabled ?? true) &&
+        (root.requestFullscreen || root.webkitRequestFullscreen)
+    );
+
+    if (canNativeFs) {
+      try {
+        if (root.requestFullscreen) {
+          await root.requestFullscreen();
+        } else if (root.webkitRequestFullscreen) {
+          await root.webkitRequestFullscreen();
+        }
+        return;
+      } catch {
+        // Blocked by iframe Permissions-Policy or browser restriction: use in-app fullscreen
+      }
+    }
+
+    setFallbackFullscreen(true);
   };
 
   const handleRecordScore = (score: number, starsEarned: number) => {
@@ -165,31 +327,41 @@ export default function App() {
 
   const handleToggleSound = () => {
     setSoundEnabled((prev) => {
-      if (prev) stopSpeaking();
-      return !prev;
+      if (prev) {
+        stopSpeaking();
+        return false;
+      }
+      playClickPop(true);
+      return true;
     });
   };
 
   return (
     <div
+      data-lim-mode={limMode ? 'true' : 'false'}
       className={`flex flex-col bg-slate-50 text-slate-900 ${
-        limMode ? 'min-h-screen md:h-screen md:overflow-hidden pb-16 md:pb-0' : 'min-h-screen pb-16 md:pb-0'
+        fallbackFullscreen ? 'fixed inset-0 z-50 ' : ''
+      }${
+        limMode
+          ? 'min-h-screen md:h-screen md:overflow-hidden md:touch-none overscroll-none select-none pb-16 md:pb-0'
+          : `${fallbackFullscreen ? 'h-screen overflow-y-auto' : 'min-h-screen'} pb-16 md:pb-0`
       }`}
     >
       {/* Three-Zone Top Bar */}
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur-xs">
-        <div className="mx-auto flex h-14 md:h-auto max-w-[1440px] items-center justify-between gap-3 lg:gap-8 px-4 md:py-2.5 sm:px-6">
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur-xs touch-none">
+        <div className="mx-auto flex h-11 md:h-auto max-w-[1360px] items-center justify-between gap-3 lg:gap-6 px-3 md:py-1.5 sm:px-5">
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             <img
               src="/assets/aistudio/LOGO_EFT_Calabria_trasparente_29afe73d.png"
               alt="Logo Équipe Formativa Calabria"
-              className="h-8 w-auto sm:h-10 object-contain shrink-0"
+              draggable={false}
+              className="h-7 w-auto sm:h-8 object-contain shrink-0 select-none"
             />
-            <span className="hidden sm:block h-7 w-px bg-slate-200" aria-hidden="true" />
+            <span className="hidden sm:block h-5 w-px bg-slate-200" aria-hidden="true" />
             <button
               type="button"
               onClick={() => handleSelectSection('slitta')}
-              className="text-left text-base lg:text-lg font-semibold tracking-tight text-[#0F5132] whitespace-nowrap shrink-0 cursor-pointer"
+              className="text-left text-sm lg:text-base font-semibold tracking-tight text-[#0F5132] touch-none select-none whitespace-nowrap shrink-0 cursor-pointer"
               style={{ fontFamily: 'var(--font-display)' }}
             >
               Villaggio delle Forme
@@ -199,7 +371,7 @@ export default function App() {
           {/* Desktop & Tablet Horizontal Nav */}
           <nav
             aria-label="Navigazione giochi di geometria"
-            className="hidden md:flex items-center gap-3 lg:gap-6 text-sm font-medium text-slate-600"
+            className="hidden md:flex items-center gap-2 lg:gap-4 text-xs lg:text-[13px] font-medium text-slate-600 touch-none"
           >
             {NAV_ITEMS.map((item) => {
               const isActive = section === item.id;
@@ -208,15 +380,16 @@ export default function App() {
                   key={item.id}
                   type="button"
                   onClick={() => handleSelectSection(item.id)}
-                  className={`relative min-h-[40px] px-1 py-1.5 transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                  className={`relative min-h-[30px] px-1 py-0.5 transition-colors touch-none select-none whitespace-nowrap shrink-0 cursor-pointer ${
                     isActive
                       ? 'text-slate-900 font-semibold'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  {item.label}
+                  <span className="lg:hidden">{item.shortLabel}</span>
+                  <span className="hidden lg:inline">{item.label}</span>
                   {isActive && (
-                    <span className="absolute inset-x-0 -bottom-[13px] h-[3px] bg-red-600" />
+                    <span className="absolute inset-x-0 -bottom-[7px] h-[2px] bg-red-600" />
                   )}
                 </button>
               );
@@ -227,7 +400,7 @@ export default function App() {
             <button
               type="button"
               onClick={handleNewGame}
-              className="min-h-[40px] rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="min-h-[30px] rounded-md bg-red-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-red-700 transition-colors touch-none select-none whitespace-nowrap shrink-0 cursor-pointer"
             >
               Nuova Partita
             </button>
@@ -236,17 +409,26 @@ export default function App() {
       </header>
 
       {/* Classroom LIM & Tablet Display Toolbar (below header) */}
-      <div className="shrink-0 border-b border-slate-200 bg-white">
-        <div
-          className={`mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-2 px-4 sm:px-6 ${
-            limMode ? 'py-1.5' : 'py-2'
-          }`}
-        >
-          <span className="text-xs font-medium text-slate-600">
-            Visualizzazione Aula · {limMode ? 'Modalità LIM orizzontale senza scorrimento' : 'Formato standard tablet e PC'}
+      <div className="shrink-0 border-b border-slate-200 bg-white touch-none">
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-2 px-3 py-1 sm:px-5">
+          <span className="text-[11px] font-medium text-slate-600 select-none">
+            Aula · {limMode ? 'LIM orizzontale' : 'Tablet e PC'}
           </span>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                playClickPop(soundEnabled);
+                setShowWelcome(true);
+              }}
+              aria-expanded={showWelcome}
+              className="inline-flex min-h-[28px] items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors touch-none select-none whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              <HelpCircle className="h-3 w-3 text-amber-600" aria-hidden="true" />
+              <span>Guida</span>
+            </button>
+
             <button
               type="button"
               onClick={() => {
@@ -254,46 +436,75 @@ export default function App() {
                 setLimMode((prev) => !prev);
               }}
               aria-pressed={limMode}
-              className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border px-3 py-1 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`inline-flex min-h-[28px] items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-colors touch-none select-none whitespace-nowrap shrink-0 cursor-pointer ${
                 limMode
                   ? 'border-[#0F5132] bg-[#0F5132] text-white'
                   : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
               }`}
             >
-              <Monitor className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>{limMode ? 'Modalità LIM: Attiva' : 'Modalità LIM'}</span>
+              <Monitor className="h-3 w-3" aria-hidden="true" />
+              <span>{limMode ? 'LIM: Attiva' : 'Modalità LIM'}</span>
             </button>
 
             <button
               type="button"
               onClick={toggleFullscreen}
-              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer"
+              aria-pressed={isFullscreen}
+              className={`inline-flex min-h-[28px] items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-colors touch-none select-none whitespace-nowrap shrink-0 cursor-pointer ${
+                isFullscreen
+                  ? 'border-slate-900 bg-slate-900 text-white hover:bg-slate-800'
+                  : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+              }`}
             >
               {isFullscreen ? (
-                <Minimize2 className="h-3.5 w-3.5" aria-hidden="true" />
+                <Minimize2 className="h-3 w-3" aria-hidden="true" />
               ) : (
-                <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
+                <Maximize2 className="h-3 w-3" aria-hidden="true" />
               )}
-              <span>{isFullscreen ? 'Esci da Schermo Intero' : 'Schermo Intero'}</span>
+              <span>{isFullscreen ? 'Esci Intero' : 'Schermo Intero'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleToggleSnow}
+              aria-pressed={snowEnabled}
+              className={`inline-flex min-h-[28px] items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-colors touch-none select-none whitespace-nowrap shrink-0 cursor-pointer ${
+                snowEnabled
+                  ? 'border-sky-300 bg-sky-50 text-sky-900 hover:bg-sky-100'
+                  : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Snowflake
+                className={`h-3 w-3 ${snowEnabled ? 'text-sky-600' : 'text-slate-400'}`}
+                aria-hidden="true"
+              />
+              <span>{snowEnabled ? 'Neve: Sì' : 'Neve: No'}</span>
             </button>
 
             <button
               type="button"
               onClick={handleToggleSound}
-              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer"
+              className="inline-flex min-h-[28px] items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 touch-none select-none whitespace-nowrap shrink-0 cursor-pointer"
             >
               {soundEnabled ? (
-                <Volume2 className="h-3.5 w-3.5 text-[#0F5132]" aria-hidden="true" />
+                <Volume2 className="h-3 w-3 text-[#0F5132]" aria-hidden="true" />
               ) : (
-                <VolumeX className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+                <VolumeX className="h-3 w-3 text-slate-400" aria-hidden="true" />
               )}
-              <span>{soundEnabled ? 'Audio e Voce: Attivi' : 'Audio: Muto'}</span>
+              <span>{soundEnabled ? 'Audio: Attivo' : 'Audio: Muto'}</span>
             </button>
           </div>
         </div>
       </div>
 
-      <main className={limMode ? 'flex-1 min-h-0 md:overflow-hidden' : 'flex-1'}>
+      <main
+        data-game-area="true"
+        className={
+          limMode
+            ? 'flex-1 min-h-0 md:overflow-hidden md:touch-none overscroll-none select-none'
+            : 'flex-1'
+        }
+      >
         {section === 'slitta' && (
           <SleighChallengeGame
             level={level}
@@ -344,24 +555,57 @@ export default function App() {
             limMode={limMode}
           />
         )}
+
+        {section === 'istruzioni' && (
+          <CanvasGuidePage
+            soundEnabled={soundEnabled}
+            limMode={limMode}
+          />
+        )}
+
+        {section === 'credits' && (
+          <CreditsPage
+            soundEnabled={soundEnabled}
+            limMode={limMode}
+          />
+        )}
       </main>
 
-      {!limMode && (
+      {!limMode && !isFullscreen && (
         <footer className="border-t border-slate-200 bg-white">
-          <div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-4 py-4 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <div className="flex items-center gap-3">
+          <div className="mx-auto flex max-w-[1360px] flex-col gap-2 px-3 py-2.5 text-[11px] text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div className="flex items-center gap-2">
               <img
                 src="/assets/aistudio/LOGO_EFT_Calabria_trasparente_29afe73d.png"
                 alt="Équipe Formativa Calabria"
-                className="h-8 w-auto object-contain shrink-0"
+                className="h-6 w-auto object-contain shrink-0"
               />
               <span className="font-medium">
-                Missione Natale: Il Villaggio delle Forme · Scuola Primaria
+                Missione Natale: Il Villaggio delle Forme · EFT Calabria
               </span>
             </div>
-            <span className="font-mono tabular-nums text-slate-500">
-              Stelle raccolte: {stats.totalStars} · Costruzioni: {stats.completedPuzzles.length}/{TANGRAM_PUZZLES.length} · Indovinelli: {stats.solvedRiddles.length}/{RIDDLES_BANK.length}
-            </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="font-mono tabular-nums text-slate-500">
+                Stelle: {stats.totalStars} · Costruzioni: {stats.completedPuzzles.length}/{TANGRAM_PUZZLES.length} · Indovinelli: {stats.solvedRiddles.length}/{RIDDLES_BANK.length}
+              </span>
+              <div className="flex items-center gap-2 font-semibold">
+                <button
+                  type="button"
+                  onClick={() => handleSelectSection('istruzioni')}
+                  className="text-[#0F5132] hover:underline cursor-pointer"
+                >
+                  Google Canvas
+                </button>
+                <span aria-hidden="true">·</span>
+                <button
+                  type="button"
+                  onClick={() => handleSelectSection('credits')}
+                  className="text-[#0F5132] hover:underline cursor-pointer"
+                >
+                  Elfi Equipers
+                </button>
+              </div>
+            </div>
           </div>
         </footer>
       )}
@@ -369,7 +613,7 @@ export default function App() {
       {/* Mobile & Small Tablet Bottom Thumb-Zone Tab Bar */}
       <nav
         aria-label="Menu rapido tablet e smartphone"
-        className="fixed bottom-0 left-0 right-0 z-40 grid h-14 grid-cols-5 border-t border-slate-200 bg-white/95 backdrop-blur-md md:hidden"
+        className="fixed bottom-0 left-0 right-0 z-40 grid h-14 grid-cols-7 border-t border-slate-200 bg-white/95 backdrop-blur-md touch-none md:hidden"
       >
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
@@ -379,16 +623,26 @@ export default function App() {
               key={item.id}
               type="button"
               onClick={() => handleSelectSection(item.id)}
-              className={`flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition-colors cursor-pointer ${
+              className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors touch-none select-none cursor-pointer ${
                 isActive ? 'text-red-600' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Icon className="h-5 w-5" aria-hidden="true" />
-              <span className="truncate max-w-[68px]">{item.shortLabel}</span>
+              <Icon className="h-4 w-4" aria-hidden="true" />
+              <span className="truncate max-w-[48px]">{item.shortLabel}</span>
             </button>
           );
         })}
       </nav>
+
+      <SnowfallOverlay enabled={snowEnabled} />
+
+      <WelcomeOverlay
+        open={showWelcome}
+        limMode={limMode}
+        soundEnabled={soundEnabled}
+        onToggleLimMode={() => setLimMode((prev) => !prev)}
+        onClose={handleCloseWelcome}
+      />
     </div>
   );
 }

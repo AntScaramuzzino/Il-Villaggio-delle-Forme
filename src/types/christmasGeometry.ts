@@ -1,4 +1,4 @@
-export type GameSection = 'slitta' | 'albero' | 'indovinelli' | 'atlante' | 'dashboard';
+export type GameSection = 'slitta' | 'albero' | 'indovinelli' | 'atlante' | 'dashboard' | 'istruzioni' | 'credits';
 
 export type SchoolLevel = 'base' | 'poligoni' | 'esperti';
 
@@ -33,6 +33,7 @@ export interface ChristmasShapeDef {
   rightAngles: number | null;
   symmetryAxes: string;
   christmasObject: string;
+  christmasObjectArticle: string;
   christmasClue: string;
   description: string;
   schoolTip: string;

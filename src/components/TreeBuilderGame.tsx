@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   CheckCircle2,
   Eye,
@@ -8,12 +8,13 @@ import {
   Puzzle,
   RotateCcw,
   Sparkles,
+  Square,
   Trees,
   Volume2
 } from 'lucide-react';
 import { getShapeById, TANGRAM_PUZZLES } from '../data/christmasShapes';
-import { playClickPop, playErrorThud, playSuccessChime, playVictoryFanfare } from '../lib/soundFx';
-import { speakForKids, stopSpeaking } from '../lib/ttsVoice';
+import { AUDIO_DELAYS, playClickPop, playErrorThud, playSuccessChime, playVictoryFanfare } from '../lib/soundFx';
+import { speakForKids, stopSpeaking, toggleSpeakForKids, useSpeakingState } from '../lib/ttsVoice';
 import { ShapeId, TangramSlot } from '../types/christmasGeometry';
 import { ResilientImage } from './ResilientImage';
 import { ShapeSvg } from './ShapeSvg';
@@ -95,7 +96,14 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
   const [feedbackStatus, setFeedbackStatus] = useState<'neutral' | 'ok' | 'err'>('neutral');
 
   const puzzle = TANGRAM_PUZZLES[puzzleIdx];
-  const containerMax = limMode ? 'max-w-[1600px]' : 'max-w-[1200px]';
+  const containerMax = limMode ? 'max-w-[1600px]' : 'max-w-[1160px]';
+  const isSpeaking = useSpeakingState();
+
+  useEffect(() => {
+    return () => {
+      stopSpeaking();
+    };
+  }, []);
 
   const placedCount = useMemo(
     () => puzzle.slots.filter((s) => placedSlots[s.slotId]).length,
@@ -119,7 +127,7 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
     setFeedbackStatus('neutral');
     const msg = `Nuova scena: ${TANGRAM_PUZZLES[idx].title}. Tocca una forma nel vassoio e poi lo spazio tratteggiato.`;
     setFeedbackMsg(msg);
-    speakForKids(msg, soundEnabled);
+    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick });
   };
 
   const resetCurrentPuzzle = () => {
@@ -130,7 +138,7 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
     setFeedbackStatus('neutral');
     const msg = 'Tavolo pulito! Ricomincia la costruzione natalizia.';
     setFeedbackMsg(msg);
-    speakForKids(msg, soundEnabled);
+    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick });
   };
 
   const tryPlacePiece = (slot: TangramSlot, pieceId: ShapeId) => {
@@ -144,25 +152,27 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
       setActiveSlotId(null);
       setFeedbackStatus('ok');
 
+      const capArticle =
+        chosenDef.articleName.charAt(0).toUpperCase() + chosenDef.articleName.slice(1);
       const nextCount = puzzle.slots.filter((s) => nextPlaced[s.slotId]).length;
       if (nextCount === puzzle.slots.length) {
         playVictoryFanfare(soundEnabled);
         onCompletePuzzle(puzzle.id);
-        const msg = `Fantastico! Hai completato "${puzzle.title}"! Il ${chosenDef.name.toLowerCase()} ha svelato: ${chosenDef.christmasObject}!`;
+        const msg = `Fantastico! Hai completato "${puzzle.title}"! ${capArticle} ha svelato ${chosenDef.christmasObjectArticle}!`;
         setFeedbackMsg(msg);
-        speakForKids(msg, soundEnabled);
+        speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterFanfare });
       } else {
         playSuccessChime(soundEnabled);
-        const msg = `Perfetto! ${chosenDef.name} incastrato in "${slot.label}" — oggetto di Natale: ${chosenDef.christmasObject}!`;
+        const msg = `Perfetto! ${capArticle} è al posto giusto in "${slot.label}" — proprio come ${chosenDef.christmasObjectArticle}!`;
         setFeedbackMsg(msg);
-        speakForKids(msg, soundEnabled);
+        speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterChime });
       }
     } else {
       playErrorThud(soundEnabled);
       setFeedbackStatus('err');
       const msg = `Non entra qui! Hai scelto ${chosenDef.articleName} (${chosenDef.christmasObject}). Indizio: ${slot.hint}`;
       setFeedbackMsg(msg);
-      speakForKids(msg, soundEnabled);
+      speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterThud });
     }
   };
 
@@ -177,7 +187,7 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
       setFeedbackStatus('neutral');
       const msg = `Spazio selezionato: "${slot.label}". ${slot.hint}`;
       setFeedbackMsg(msg);
-      speakForKids(msg, soundEnabled);
+      speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick });
     }
   };
 
@@ -195,7 +205,7 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
     setFeedbackStatus('neutral');
     const msg = `Hai preso ${def.articleName}: ${def.christmasObject}. Ora tocca lo spazio giusto sul disegno!`;
     setFeedbackMsg(msg);
-    speakForKids(msg, soundEnabled);
+    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick });
   };
 
   const handleRevealHint = () => {
@@ -206,55 +216,47 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
     setFeedbackStatus('neutral');
     const msg = `Aiuto per "${firstMissing.label}": ${firstMissing.hint}`;
     setFeedbackMsg(msg);
-    speakForKids(msg, soundEnabled);
+    speakForKids(msg, soundEnabled, { delayMs: AUDIO_DELAYS.afterClick });
   };
 
   return (
     <section
-      className={`mx-auto ${containerMax} px-4 sm:px-6 ${
-        limMode ? 'flex flex-col gap-2.5 py-2.5 md:h-full md:overflow-hidden' : 'py-5'
+      className={`mx-auto ${containerMax} px-3 sm:px-5 ${
+        limMode ? 'flex flex-col gap-2 py-2 md:h-full md:overflow-hidden' : 'py-3 space-y-3'
       }`}
     >
       {/* Mode Switcher: 8 Christmas Scenes vs 7-Piece Tangram Factory */}
-      <div
-        className={`flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-slate-300 bg-white ${
-          limMode ? 'px-3 py-1.5' : 'mb-5 p-3'
-        }`}
-      >
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white px-2.5 py-1">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
             onClick={() => switchMode('scenes')}
-            className={`inline-flex items-center gap-2 rounded-xl border-2 px-3.5 py-1.5 text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-              limMode ? 'min-h-[38px]' : 'min-h-[44px] px-4 py-2'
-            } ${
+            className={`inline-flex min-h-[30px] items-center gap-1.5 rounded-lg border-2 px-3 py-0.5 text-xs font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
               builderMode === 'scenes'
                 ? 'border-[#0F5132] bg-[#0F5132] text-white'
                 : 'border-slate-300 bg-white text-slate-900 hover:bg-slate-50'
             }`}
           >
-            <Trees className="h-4 w-4" aria-hidden="true" />
-            <span>Scene di Natale (8 Modelli)</span>
+            <Trees className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>Scene di Natale (8)</span>
           </button>
 
           <button
             type="button"
             onClick={() => switchMode('tangram')}
-            className={`inline-flex items-center gap-2 rounded-xl border-2 px-3.5 py-1.5 text-sm font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-              limMode ? 'min-h-[38px]' : 'min-h-[44px] px-4 py-2'
-            } ${
+            className={`inline-flex min-h-[30px] items-center gap-1.5 rounded-lg border-2 px-3 py-0.5 text-xs font-bold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
               builderMode === 'tangram'
                 ? 'border-red-600 bg-red-600 text-white'
                 : 'border-slate-300 bg-white text-slate-900 hover:bg-slate-50'
             }`}
           >
-            <Puzzle className="h-4 w-4" aria-hidden="true" />
-            <span>Fabbrica Tangram (7 Pezzi)</span>
+            <Puzzle className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>Fabbrica Tangram (7)</span>
           </button>
         </div>
 
-        <span className="font-mono text-xs font-semibold text-slate-700 tabular-nums">
-          Completate: {completedPuzzles.length}/{TANGRAM_PUZZLES.length} scene
+        <span className="font-mono text-[11px] font-semibold text-slate-700 tabular-nums">
+          Completate: {completedPuzzles.length}/{TANGRAM_PUZZLES.length}
         </span>
       </div>
 
@@ -265,19 +267,19 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
           limMode={limMode}
         />
       ) : (
-        <div className={limMode ? 'flex-1 min-h-0 flex flex-col gap-2.5' : ''}>
+        <div className={limMode ? 'flex-1 min-h-0 flex flex-col gap-2' : 'space-y-3'}>
           {/* Header & Construction Selector */}
           <div>
             {!limMode && (
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <div>
                   <h1
-                    className="text-2xl sm:text-3xl font-semibold text-slate-900"
+                    className="text-xl sm:text-2xl font-semibold text-slate-900"
                     style={{ fontFamily: 'var(--font-display)' }}
                   >
-                    Albero Magico e Costruzioni di Natale
+                    Albero Magico
                   </h1>
-                  <p className="mt-1 text-sm text-slate-700">
+                  <p className="mt-0.5 text-xs text-slate-700">
                     {puzzle.subtitle}
                   </p>
                 </div>
@@ -286,8 +288,8 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
 
             {/* 8-Construction Selector Grid */}
             <div
-              className={`grid gap-1.5 rounded-xl bg-slate-200 p-1.5 ${
-                limMode ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8' : 'mt-4 grid-cols-2 sm:grid-cols-4 gap-2'
+              className={`grid gap-1 rounded-xl bg-slate-200 p-1 ${
+                limMode ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8' : 'mt-2.5 grid-cols-2 sm:grid-cols-4'
               }`}
             >
               {TANGRAM_PUZZLES.map((item, idx) => {
@@ -298,17 +300,17 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
                     key={item.id}
                     type="button"
                     onClick={() => selectPuzzle(idx)}
-                    className={`flex items-center justify-between gap-1.5 rounded-lg border text-left text-xs font-bold transition-colors cursor-pointer ${
-                      limMode ? 'min-h-[38px] px-2.5 py-1.5' : 'min-h-[46px] px-3 py-2'
+                    className={`flex items-center justify-between gap-1.5 rounded-lg border text-left text-[11px] font-bold transition-colors cursor-pointer ${
+                      limMode ? 'min-h-[30px] px-2 py-0.5' : 'min-h-[32px] px-2.5 py-1'
                     } ${
                       active
                         ? 'border-[#0F5132] bg-white text-slate-900 shadow-xs'
                         : 'border-transparent bg-slate-100 text-slate-900 hover:bg-white'
                     }`}
                   >
-                    <span className="truncate text-xs">{item.title}</span>
-                    <span className="flex items-center gap-1 shrink-0 font-semibold text-[11px] text-slate-700">
-                      {done && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />}
+                    <span className="truncate">{item.title}</span>
+                    <span className="flex items-center gap-1 shrink-0 font-semibold text-[10px] text-slate-700">
+                      {done && <CheckCircle2 className="h-3 w-3 text-emerald-600" aria-hidden="true" />}
                       {!limMode && <span className="hidden lg:inline">{item.levelLabel}</span>}
                     </span>
                   </button>
@@ -319,24 +321,24 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
 
           {/* Two-zone Workbench (side-by-side already on tablet landscape md:) */}
           <div
-            className={`grid grid-cols-1 md:grid-cols-12 md:items-stretch ${
-              limMode ? 'flex-1 min-h-0 gap-4' : 'mt-5 gap-6'
+            className={`grid grid-cols-1 gap-3 md:grid-cols-12 md:items-stretch ${
+              limMode ? 'flex-1 min-h-0' : ''
             }`}
           >
             {/* Left: Illustrated Blueprint Canvas */}
             <div
-              className={`flex flex-col justify-between rounded-2xl bg-[#0F5132] text-white md:col-span-7 ${
-                limMode ? 'min-h-0 p-3.5' : 'p-5 sm:p-6'
+              className={`flex flex-col justify-between rounded-xl bg-[#0F5132] text-white md:col-span-7 ${
+                limMode ? 'min-h-0 p-3' : 'p-3.5 sm:p-4'
               }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="text-xs text-emerald-100">
+                <div className="text-[11px] text-emerald-100">
                   <span className="font-semibold text-white">{puzzle.title}</span>
-                  <span className="mx-2" aria-hidden="true">·</span>
+                  <span className="mx-1.5" aria-hidden="true">·</span>
                   <span>{puzzle.levelLabel}</span>
-                  <span className="mx-2" aria-hidden="true">·</span>
+                  <span className="mx-1.5" aria-hidden="true">·</span>
                   <span className="font-mono tabular-nums">
-                    Pezzi: {placedCount}/{puzzle.slots.length}
+                    {placedCount}/{puzzle.slots.length}
                   </span>
                 </div>
 
@@ -348,11 +350,9 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
                         playClickPop(soundEnabled);
                         setShowBackdrop((v) => !v);
                       }}
-                      className={`inline-flex items-center gap-1.5 rounded-lg border border-emerald-300/60 bg-[#083822] px-2.5 py-1 text-xs font-bold text-white hover:bg-[#062b1a] whitespace-nowrap shrink-0 cursor-pointer ${
-                        limMode ? 'min-h-[36px]' : 'min-h-[42px] px-3 py-1.5'
-                      }`}
+                      className="inline-flex min-h-[28px] items-center gap-1 rounded-md border border-emerald-300/60 bg-[#083822] px-2 py-0.5 text-[11px] font-bold text-white hover:bg-[#062b1a] whitespace-nowrap shrink-0 cursor-pointer"
                     >
-                      <ImageIcon className="h-3.5 w-3.5 text-emerald-200" aria-hidden="true" />
+                      <ImageIcon className="h-3 w-3 text-emerald-200" aria-hidden="true" />
                       <span>{showBackdrop ? 'Sfondo: Scena' : 'Sfondo: Lavagna'}</span>
                     </button>
                   )}
@@ -360,21 +360,17 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
                     type="button"
                     onClick={handleRevealHint}
                     disabled={isCompleted}
-                    className={`inline-flex items-center gap-1.5 rounded-lg border border-emerald-300/60 bg-[#083822] px-2.5 py-1 text-xs font-bold text-white hover:bg-[#062b1a] whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-45 ${
-                      limMode ? 'min-h-[36px]' : 'min-h-[42px] px-3 py-1.5'
-                    }`}
+                    className="inline-flex min-h-[28px] items-center gap-1 rounded-md border border-emerald-300/60 bg-[#083822] px-2 py-0.5 text-[11px] font-bold text-white hover:bg-[#062b1a] whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-45"
                   >
-                    <HelpCircle className="h-3.5 w-3.5 text-amber-300" aria-hidden="true" />
+                    <HelpCircle className="h-3 w-3 text-amber-300" aria-hidden="true" />
                     <span>Aiuto</span>
                   </button>
                   <button
                     type="button"
                     onClick={resetCurrentPuzzle}
-                    className={`inline-flex items-center gap-1.5 rounded-lg border border-emerald-300/60 bg-[#083822] px-2.5 py-1 text-xs font-bold text-white hover:bg-[#062b1a] whitespace-nowrap shrink-0 cursor-pointer ${
-                      limMode ? 'min-h-[36px]' : 'min-h-[42px] px-3 py-1.5'
-                    }`}
+                    className="inline-flex min-h-[28px] items-center gap-1 rounded-md border border-emerald-300/60 bg-[#083822] px-2 py-0.5 text-[11px] font-bold text-white hover:bg-[#062b1a] whitespace-nowrap shrink-0 cursor-pointer"
                   >
-                    <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+                    <RotateCcw className="h-3 w-3" aria-hidden="true" />
                     <span>Ricomincia</span>
                   </button>
                 </div>
@@ -383,7 +379,7 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
               {/* Interactive SVG Scene with Illustrated Background */}
               <div
                 className={`relative flex flex-1 min-h-0 items-center justify-center overflow-hidden rounded-xl border border-emerald-300/25 bg-[#0A3A24] ${
-                  limMode ? 'mt-2.5' : 'mt-4'
+                  limMode ? 'mt-2' : 'mt-2.5'
                 }`}
               >
                 {showBackdrop && puzzle.backgroundImage && (
@@ -400,10 +396,10 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
 
                 <svg
                   viewBox="0 0 400 310"
-                  className={`relative z-10 select-none ${
+                  className={`relative z-10 touch-none select-none ${
                     limMode
                       ? 'h-full w-full max-h-full p-1.5'
-                      : 'h-auto w-full max-h-[390px] max-w-[500px] p-2'
+                      : 'h-auto w-full max-h-[300px] max-w-[420px] p-1.5'
                   }`}
                   role="img"
                   aria-label={`Schema di costruzione: ${puzzle.title}`}
@@ -497,8 +493,8 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
 
               {/* Feedback strip with TTS Ascolta button */}
               <div
-                className={`flex flex-wrap items-center justify-between gap-2.5 rounded-xl px-3.5 ${
-                  limMode ? 'mt-2.5 py-2 text-sm' : 'mt-4 px-4 py-3 text-sm'
+                className={`flex flex-wrap items-center justify-between gap-2 rounded-xl px-3 ${
+                  limMode ? 'mt-2 py-1.5 text-xs' : 'mt-2.5 py-2 text-xs sm:text-[13px]'
                 } ${
                   feedbackStatus === 'ok'
                     ? 'bg-[#083822] text-emerald-50 border border-emerald-400/50'
@@ -508,31 +504,31 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
                 }`}
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  {isCompleted && <Sparkles className="h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />}
+                  {isCompleted && <Sparkles className="h-3.5 w-3.5 shrink-0 text-amber-300" aria-hidden="true" />}
                   <span className={limMode ? 'line-clamp-2' : ''}>{feedbackMsg}</span>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     type="button"
-                    onClick={() => speakForKids(feedbackMsg, true)}
-                    className={`inline-flex items-center gap-1.5 rounded-lg bg-amber-400 px-3 text-xs font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer ${
-                      limMode ? 'min-h-[36px] py-1' : 'min-h-[42px] px-3.5 py-2'
-                    }`}
+                    onClick={() => toggleSpeakForKids(feedbackMsg)}
+                    className="inline-flex min-h-[28px] items-center gap-1 rounded-md bg-amber-400 px-2.5 py-0.5 text-[11px] font-bold text-slate-950 hover:bg-amber-300 whitespace-nowrap shrink-0 cursor-pointer"
                   >
-                    <Volume2 className="h-4 w-4" aria-hidden="true" />
-                    <span>Ascolta</span>
+                    {isSpeaking ? (
+                      <Square className="h-3 w-3 fill-slate-950" aria-hidden="true" />
+                    ) : (
+                      <Volume2 className="h-3 w-3" aria-hidden="true" />
+                    )}
+                    <span>{isSpeaking ? 'Ferma' : 'Ascolta'}</span>
                   </button>
 
                   {isCompleted && (
                     <button
                       type="button"
                       onClick={() => selectPuzzle((puzzleIdx + 1) % TANGRAM_PUZZLES.length)}
-                      className={`rounded-lg bg-white px-3.5 text-xs font-bold text-slate-950 hover:bg-slate-100 whitespace-nowrap shrink-0 cursor-pointer ${
-                        limMode ? 'min-h-[36px] py-1' : 'min-h-[42px] px-4 py-2'
-                      }`}
+                      className="inline-flex min-h-[28px] items-center rounded-md bg-white px-2.5 py-0.5 text-[11px] font-bold text-slate-950 hover:bg-slate-100 whitespace-nowrap shrink-0 cursor-pointer"
                     >
-                      Prossima Costruzione
+                      Prossima
                     </button>
                   )}
                 </div>
@@ -541,13 +537,13 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
 
             {/* Right: Wooden Shape Pieces Tray */}
             <div
-              className={`flex flex-col justify-between rounded-2xl border border-slate-300 bg-white md:col-span-5 ${
-                limMode ? 'min-h-0 overflow-hidden p-3.5' : 'p-5 sm:p-6'
+              className={`flex flex-col justify-between rounded-xl border border-slate-300 bg-white md:col-span-5 ${
+                limMode ? 'min-h-0 overflow-hidden p-3' : 'p-3.5 sm:p-4'
               }`}
             >
               <div className={limMode ? 'flex-1 min-h-0 flex flex-col' : ''}>
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className={`font-semibold text-slate-900 ${limMode ? 'text-base' : 'text-lg'}`}>
+                  <h2 className="text-sm sm:text-base font-semibold text-slate-900">
                     Vassoio delle Forme
                   </h2>
                   <button
@@ -556,30 +552,28 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
                       playClickPop(soundEnabled);
                       setShowLabels((prev) => !prev);
                     }}
-                    className={`inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-900 hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer ${
-                      limMode ? 'min-h-[34px] py-1' : 'min-h-[40px] px-3 py-1.5'
-                    }`}
+                    className="inline-flex min-h-[28px] items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-bold text-slate-900 hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     {showLabels ? (
-                      <Eye className="h-3.5 w-3.5 text-slate-700" aria-hidden="true" />
+                      <Eye className="h-3 w-3 text-slate-700" aria-hidden="true" />
                     ) : (
-                      <EyeOff className="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
+                      <EyeOff className="h-3 w-3 text-slate-500" aria-hidden="true" />
                     )}
-                    <span>{showLabels ? 'Nomi: Visibili' : 'Nomi: Nascosti'}</span>
+                    <span>{showLabels ? 'Nomi: Sì' : 'Nomi: No'}</span>
                   </button>
                 </div>
 
                 {!limMode && (
-                  <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
-                    Tocca una forma decorata qui sotto e poi tocca la sagoma sul disegno (oppure trascinala).
+                  <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
+                    Tocca una forma nel vassoio e poi la sagoma sul disegno (oppure trascinala).
                   </p>
                 )}
 
                 <div
                   className={
                     limMode
-                      ? 'mt-2.5 grid flex-1 min-h-0 grid-cols-2 lg:grid-cols-3 gap-2 content-start'
-                      : 'mt-4 grid grid-cols-2 gap-3'
+                      ? 'mt-2 grid flex-1 min-h-0 grid-cols-2 lg:grid-cols-3 gap-1.5 content-start'
+                      : 'mt-2.5 grid grid-cols-2 gap-2'
                   }
                 >
                   {puzzle.palette.map((shapeId) => {
@@ -601,17 +595,17 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
                         disabled={remainingForShape === 0}
                         onClick={() => handlePieceClick(shapeId)}
                         className={`flex flex-col items-center justify-center rounded-xl border-2 transition-colors cursor-pointer disabled:opacity-45 disabled:cursor-default ${
-                          limMode ? 'min-h-[96px] gap-1 p-2' : 'min-h-[126px] gap-1.5 p-3'
+                          limMode ? 'min-h-[82px] gap-1 p-1.5' : 'min-h-[94px] gap-1 p-2'
                         } ${
                           isSelected
                             ? 'border-red-600 bg-red-50 ring-2 ring-red-500/30'
                             : 'border-slate-300 bg-white hover:border-[#0F5132] hover:bg-emerald-50/45'
                         }`}
                       >
-                        <ShapeSvg shapeId={shapeId} size={limMode ? 48 : 62} ornamentMode />
+                        <ShapeSvg shapeId={shapeId} size={limMode ? 42 : 46} ornamentMode />
                         {showLabels && (
                           <div className="text-center">
-                            <span className={`block font-bold text-slate-900 ${limMode ? 'text-xs' : 'text-sm'}`}>
+                            <span className="block text-xs font-bold text-slate-900">
                               {def.name}
                             </span>
                             <span className="block text-[10px] font-semibold text-red-700 leading-tight">
@@ -621,7 +615,7 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
                         )}
                         <span className="font-mono text-[10px] font-semibold text-slate-700 tabular-nums">
                           {remainingForShape > 0
-                            ? `Da inserire: ${remainingForShape}`
+                            ? `Rimasti: ${remainingForShape}`
                             : 'Completato'}
                         </span>
                       </button>
@@ -631,14 +625,14 @@ export const TreeBuilderGame: React.FC<TreeBuilderGameProps> = ({
               </div>
 
               <div
-                className={`rounded-xl border border-slate-200 bg-slate-50 text-xs leading-relaxed text-slate-700 ${
-                  limMode ? 'mt-2 px-3 py-2 text-[11px]' : 'mt-5 p-4'
+                className={`rounded-lg border border-slate-200 bg-slate-50 text-[11px] leading-relaxed text-slate-700 ${
+                  limMode ? 'mt-2 px-2.5 py-1.5' : 'mt-2.5 p-2.5'
                 }`}
               >
-                <strong className="font-semibold text-slate-900">Suggerimento per la LIM:</strong>{' '}
+                <strong className="font-semibold text-slate-900">Suggerimento LIM:</strong>{' '}
                 {limMode
                   ? 'Tocca prima lo spazio sul disegno e poi la figura nel vassoio, oppure apri la Fabbrica Tangram.'
-                  : 'I bambini possono toccare prima lo spazio tratteggiato sulla lavagna e poi la figura corrispondente nel vassoio, oppure aprire la Fabbrica Tangram in alto!'}
+                  : 'Tocca prima lo spazio tratteggiato sulla lavagna e poi la figura nel vassoio, oppure apri la Fabbrica Tangram in alto.'}
               </div>
             </div>
           </div>
