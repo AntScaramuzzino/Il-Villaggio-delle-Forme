@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Award, BarChart3, BookOpen, Gift, HelpCircle, Maximize2, Minimize2, Monitor, Snowflake, Trees, Volume2, VolumeX, Wand2 } from 'lucide-react';
+import { Award, BarChart3, BookOpen, Gift, HelpCircle, Maximize2, Minimize2, Monitor, Music, Snowflake, Trees, Volume2, VolumeX, Wand2 } from 'lucide-react';
 import { CanvasGuidePage } from './components/CanvasGuidePage';
 import { CreditsPage } from './components/CreditsPage';
 import { ProgressDashboard } from './components/ProgressDashboard';
@@ -10,8 +10,9 @@ import { SnowfallOverlay } from './components/SnowfallOverlay';
 import { TreeBuilderGame } from './components/TreeBuilderGame';
 import { WelcomeOverlay } from './components/WelcomeOverlay';
 import { RIDDLES_BANK, TANGRAM_PUZZLES } from './data/christmasShapes';
+import { setChristmasMusicDucked, setChristmasMusicEnabled } from './lib/christmasMusic';
 import { playClickPop } from './lib/soundFx';
-import { stopSpeaking } from './lib/ttsVoice';
+import { stopSpeaking, useSpeakingState } from './lib/ttsVoice';
 import { GameSection, SchoolLevel, ShapeId, WorkshopStats } from './types/christmasGeometry';
 
 const NAV_ITEMS: Array<{
@@ -32,6 +33,7 @@ const NAV_ITEMS: Array<{
 const STORAGE_KEY = 'bottega-natale-geometria-stats-v1';
 const WELCOME_STORAGE_KEY = 'bottega-natale-welcome-seen-v1';
 const SNOW_STORAGE_KEY = 'bottega-natale-snow-enabled-v1';
+const MUSIC_STORAGE_KEY = 'bottega-natale-music-enabled-v1';
 
 function hasSeenWelcome(): boolean {
   try {
@@ -44,6 +46,15 @@ function hasSeenWelcome(): boolean {
 function loadSnowEnabled(): boolean {
   try {
     const saved = localStorage.getItem(SNOW_STORAGE_KEY);
+    return saved === null ? true : saved === '1';
+  } catch {
+    return true;
+  }
+}
+
+function loadMusicEnabled(): boolean {
+  try {
+    const saved = localStorage.getItem(MUSIC_STORAGE_KEY);
     return saved === null ? true : saved === '1';
   } catch {
     return true;
@@ -95,6 +106,7 @@ export default function App() {
   const [level, setLevel] = useState<SchoolLevel>('base');
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [snowEnabled, setSnowEnabled] = useState<boolean>(loadSnowEnabled);
+  const [musicEnabled, setMusicEnabled] = useState<boolean>(loadMusicEnabled);
   const [limMode, setLimMode] = useState(false);
   const [nativeFullscreen, setNativeFullscreen] = useState(false);
   const [fallbackFullscreen, setFallbackFullscreen] = useState(false);
@@ -102,6 +114,7 @@ export default function App() {
   const [resetSignal, setResetSignal] = useState(0);
   const [transitionDir, setTransitionDir] = useState<'forward' | 'backward' | 'pop'>('pop');
   const [stats, setStats] = useState<WorkshopStats>(loadInitialStats);
+  const isElfSpeaking = useSpeakingState();
 
   const triggerToolbarPop = (button: HTMLButtonElement | null) => {
     if (!button) return;
@@ -127,6 +140,20 @@ export default function App() {
     });
   };
 
+  const handleToggleMusic = () => {
+    playClickPop(soundEnabled);
+    setMusicEnabled((prev) => {
+      const next = !prev;
+      setChristmasMusicEnabled(next);
+      try {
+        localStorage.setItem(MUSIC_STORAGE_KEY, next ? '1' : '0');
+      } catch {
+        // Ignore storage write errors
+      }
+      return next;
+    });
+  };
+
   const handleCloseWelcome = () => {
     setShowWelcome(false);
     try {
@@ -145,6 +172,20 @@ export default function App() {
       // Ignore storage write errors
     }
   }, [stats]);
+
+  useEffect(() => {
+    setChristmasMusicEnabled(musicEnabled);
+  }, [musicEnabled]);
+
+  useEffect(() => {
+    return () => {
+      setChristmasMusicEnabled(false);
+    };
+  }, []);
+
+  useEffect(() => {
+    setChristmasMusicDucked(isElfSpeaking);
+  }, [isElfSpeaking]);
 
   useEffect(() => {
     const getFullscreenElement = () => {
@@ -528,6 +569,27 @@ export default function App() {
                 aria-hidden="true"
               />
               <span>{snowEnabled ? 'Neve: Sì' : 'Neve: No'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                triggerToolbarPop(e.currentTarget);
+                handleToggleMusic();
+              }}
+              onAnimationEnd={handlePopAnimationEnd}
+              aria-pressed={musicEnabled}
+              className={`toolbar-pop-btn inline-flex min-h-[28px] items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold touch-none select-none whitespace-nowrap shrink-0 cursor-pointer ${
+                musicEnabled
+                  ? 'border-amber-300 bg-amber-50 text-amber-950 hover:bg-amber-100'
+                  : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Music
+                className={`h-3 w-3 ${musicEnabled ? 'text-red-600' : 'text-slate-400'}`}
+                aria-hidden="true"
+              />
+              <span>{musicEnabled ? 'Musica: Sì' : 'Musica: No'}</span>
             </button>
 
             <button
